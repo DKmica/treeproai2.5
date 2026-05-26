@@ -74,7 +74,7 @@ function TypingIndicator() {
   );
 }
 
-function LeadCaptureForm({ assessmentText, photoUrls, onLeadCreated, company }) {
+function LeadCaptureForm({ assessmentText, photoUrls, onLeadCreated, company, structuredAssessment }) {
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "" });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -129,7 +129,7 @@ function LeadCaptureForm({ assessmentText, photoUrls, onLeadCreated, company }) 
       }
     } catch (_) { /* proceed without customer link */ }
 
-    // Create AIAnalysisRecord
+    // Create AIAnalysisRecord with structured data if available
     if (leadId || customerId) {
       try {
         await base44.entities.AIAnalysisRecord.create({
@@ -138,6 +138,14 @@ function LeadCaptureForm({ assessmentText, photoUrls, onLeadCreated, company }) 
           image_urls: photoUrls || [],
           original_customer_notes: assessmentText?.slice(0, 3000) || "",
           human_review_status: "pending",
+          ...(structuredAssessment || {}),
+        });
+        await base44.entities.ActivityLog.create({
+          related_type: "Lead",
+          related_id: leadId || "",
+          actor: "customer",
+          action: "AI assessment completed via public estimate",
+          notes: `${form.name} · ${form.phone}`,
         });
       } catch (_) { /* non-blocking */ }
     }
@@ -226,6 +234,7 @@ function LeadCaptureForm({ assessmentText, photoUrls, onLeadCreated, company }) 
 export default function PublicEstimate() {
   const [messages, setMessages] = useState([]);
   const [quoteText, setQuoteText] = useState("");
+  const [structuredAssessment, setStructuredAssessment] = useState(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -256,6 +265,10 @@ export default function PublicEstimate() {
       image_urls: imageUrls,
     });
     const reply = response.data?.reply || "I'm sorry, I had trouble processing that. Please try again.";
+    // Store latest structured assessment if returned
+    if (response.data?.structured_assessment) {
+      setStructuredAssessment(response.data.structured_assessment);
+    }
     const aiMessage = { role: "assistant", content: reply };
     const updated = [...currentMessages, aiMessage];
     setMessages(updated);
@@ -468,6 +481,7 @@ export default function PublicEstimate() {
               photoUrls={allPhotoUrls}
               onLeadCreated={() => setLeadCreated(true)}
               company={company}
+              structuredAssessment={structuredAssessment}
             />
           </div>
         )}

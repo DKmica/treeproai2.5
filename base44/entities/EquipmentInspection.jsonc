@@ -1,0 +1,62 @@
+{
+  "name": "EquipmentInspection",
+  "type": "object",
+  "properties": {
+    "equipment_id": {
+      "type": "string"
+    },
+    "equipment_name": {
+      "type": "string"
+    },
+    "inspected_by": {
+      "type": "string"
+    },
+    "inspected_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "passed": {
+      "type": "boolean",
+      "default": true
+    },
+    "checklist": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "defects_found": {
+      "type": "string"
+    },
+    "action_required": {
+      "type": "string"
+    },
+    "next_inspection_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "equipment_id"
+  ]
+}

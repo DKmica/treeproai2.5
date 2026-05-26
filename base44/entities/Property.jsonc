@@ -17,6 +17,24 @@
     "zip": {
       "type": "string"
     },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    },
+    "gate_code": {
+      "type": "string"
+    },
+    "access_notes": {
+      "type": "string"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "notes": {
       "type": "string"
     }

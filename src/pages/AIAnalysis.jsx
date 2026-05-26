@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { buildLineItemsFromAnalysis, saveQuoteVersion, logActivity, createNotification } from "@/lib/treeproWorkflow";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -240,13 +241,7 @@ export default function AIAnalysis() {
                             setGeneratingQuote(record.id);
                             const settingsArr = await base44.entities.CompanySettings.list();
                             const s = settingsArr[0] || {};
-                            const price = record.human_final_price || record.price_high || 500;
-                            const lineItems = [{ description: record.recommended_service || "Tree Service", quantity: 1, unit_price: price, total: price }];
-                            if (record.stump_grinding_likely) {
-                              const stumpPrice = (s.stump_grinding_base_price || 100) + ((record.estimated_dbh_inches_high || 12) * (s.stump_grinding_per_inch || 4));
-                              lineItems.push({ description: "Stump Grinding", quantity: 1, unit_price: stumpPrice, total: stumpPrice });
-                            }
-                            const total = lineItems.reduce((sum, i) => sum + i.total, 0);
+                            const { lineItems, subtotal, total } = buildLineItemsFromAnalysis(record, s);
                             const expiryDate = new Date(Date.now() + (s.quote_expiration_days || 30) * 86400000).toISOString().split("T")[0];
                             const quote = await base44.entities.Quote.create({
                               quote_number: `Q-${Date.now().toString(36).toUpperCase()}`,
@@ -254,17 +249,28 @@ export default function AIAnalysis() {
                               lead_id: record.lead_id || "",
                               ai_analysis_id: record.id,
                               line_items: lineItems,
-                              subtotal: total,
-                              total_amount: Math.max(total, s.minimum_job_price || 150),
+                              subtotal,
+                              total_amount: total,
                               ai_generated: true,
                               ai_analysis: record.ai_reasoning_summary || record.condition_summary || "",
                               scope_of_work: record.recommended_service || "",
+                              risk_level: record.risk_level || undefined,
+                              crane_required: record.crane_likely || false,
                               status: "draft",
                               valid_until: expiryDate,
                             });
+                            // Save v1 QuoteVersion automatically
+                            await saveQuoteVersion(
+                              { ...quote, id: quote.id },
+                              [],
+                              "AI Analysis",
+                              "Auto-generated from AI assessment"
+                            );
                             await base44.entities.AIAnalysisRecord.update(record.id, { quote_id: quote.id });
+                            await logActivity({ relatedType: "Quote", relatedId: quote.id, actor: "staff", action: `Quote created from AI analysis`, notes: `AI analysis ${record.id}` });
+                            await createNotification({ type: "ai_review_needed", title: `Quote generated from AI analysis`, message: `Quote for ${record.recommended_service || "tree service"} — $${total.toLocaleString()}`, relatedType: "Quote", relatedId: quote.id });
                             qc.invalidateQueries({ queryKey: ["ai_analysis"] });
-                            toast.success("Quote created!");
+                            toast.success("Quote created with v1 snapshot!");
                             setGeneratingQuote(null);
                             navigate(`/quotes/${quote.id}`);
                           }}

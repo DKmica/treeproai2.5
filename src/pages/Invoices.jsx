@@ -272,11 +272,19 @@ export default function Invoices() {
     });
 
     // Update invoice
-    updateMut.mutate({ id: inv.id, data: { amount_paid: newAmountPaid, balance_due: newBalance, status: newStatus } });
+    await base44.entities.Invoice.update(inv.id, { amount_paid: newAmountPaid, balance_due: newBalance, status: newStatus });
+    qc.invalidateQueries({ queryKey: ["invoices"] });
 
-    // If fully paid, create notification
+    // Cascade: if fully paid, update linked Job and Quote statuses
     if (newStatus === "paid") {
+      if (inv.job_id) {
+        base44.entities.Job.update(inv.job_id, { status: "paid", invoice_id: inv.id }).catch(() => {});
+      }
+      if (inv.quote_id) {
+        base44.entities.Quote.update(inv.quote_id, { status: "paid" }).catch(() => {});
+      }
       base44.entities.Notification.create({ type: "general", title: `Invoice ${inv.invoice_number} fully paid`, message: `${inv.customer_name} — $${(inv.total || 0).toLocaleString()}`, read: false });
+      base44.entities.ActivityLog.create({ related_type: "Invoice", related_id: inv.id, actor: "staff", action: `Invoice ${inv.invoice_number} paid in full via ${method}`, notes: `$${amount.toLocaleString()}` });
     }
 
     setPayingInvoice(null);

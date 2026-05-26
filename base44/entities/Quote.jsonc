@@ -2,6 +2,15 @@
   "name": "Quote",
   "type": "object",
   "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "updated_by": {
+      "type": "string"
+    },
     "quote_number": {
       "type": "string"
     },
@@ -17,10 +26,16 @@
     "customer_phone": {
       "type": "string"
     },
+    "customer_address": {
+      "type": "string"
+    },
     "ai_analysis_id": {
       "type": "string"
     },
     "lead_id": {
+      "type": "string"
+    },
+    "property_id": {
       "type": "string"
     },
     "status": {
@@ -86,6 +101,28 @@
     },
     "scope_of_work": {
       "type": "string"
+    },
+    "access_notes": {
+      "type": "string"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high",
+        "extreme"
+      ]
+    },
+    "estimated_duration_hours": {
+      "type": "number"
+    },
+    "required_crew_size": {
+      "type": "number"
+    },
+    "crane_required": {
+      "type": "boolean",
+      "default": false
     },
     "notes": {
       "type": "string"

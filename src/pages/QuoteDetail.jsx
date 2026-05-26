@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
+import { createPortalLink, logActivity, createNotification } from "@/lib/treeproWorkflow";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -168,17 +169,10 @@ export default function QuoteDetail() {
   };
 
   const generatePortalLink = async () => {
-    const token = `portal-${id}-${Date.now()}`;
-    await base44.entities.CustomerPortalSession.create({
-      customer_id: quote.customer_id,
-      quote_id: id,
-      token,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      status: "active",
-    });
-    const link = `${window.location.origin}/portal/${token}`;
+    const link = await createPortalLink(id, quote.customer_id, 7);
     setPortalLink(link);
     navigator.clipboard?.writeText(link);
+    await logActivity({ relatedType: "Quote", relatedId: id, actor: "staff", action: "Portal link generated", notes: quote.customer_name });
     toast.success("Portal link copied to clipboard");
   };
 
@@ -190,16 +184,24 @@ export default function QuoteDetail() {
         customer_name: quote.customer_name,
         customer_phone: quote.customer_phone || customer?.phone || "",
         customer_email: quote.customer_email || customer?.email || "",
+        customer_address: quote.customer_address || customer?.address || "",
         quote_id: id,
-        status: "scheduled",
+        ai_analysis_id: quote.ai_analysis_id || "",
+        status: "unscheduled",
+        priority: "normal",
         description: quote.scope_of_work || quote.notes || "From quote",
         scope_of_work: quote.scope_of_work || "",
         total_cost: quote.total_amount || 0,
         line_items: quote.line_items || [],
+        risk_level: quote.risk_level || undefined,
+        crane_required: quote.crane_required || false,
+        estimated_duration_hours: quote.estimated_duration_hours || undefined,
+        required_crew_size: quote.required_crew_size || undefined,
         notes: `Converted from quote #${quote.quote_number || id.slice(0, 8)}`,
       });
       await updateMutation.mutateAsync({ status: "converted_to_job" });
-      await base44.entities.Notification.create({ type: "job_assigned", title: `Job created for ${quote.customer_name}`, message: `Quote converted successfully. Job is ready to schedule.`, read: false });
+      await logActivity({ relatedType: "Job", relatedId: job.id, actor: "staff", action: `Job created from quote #${quote.quote_number || id.slice(0, 8)}`, notes: quote.customer_name });
+      await createNotification({ type: "job_assigned", title: `Job created for ${quote.customer_name}`, message: `Quote #${quote.quote_number || id.slice(0, 8)} converted. Job ready to schedule.`, relatedType: "Job", relatedId: job.id });
       toast.success("Job created successfully!");
       setShowConvertDialog(false);
       navigate(`/jobs`);

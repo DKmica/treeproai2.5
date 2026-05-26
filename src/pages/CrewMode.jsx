@@ -7,23 +7,121 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  MapPin, Phone, Play, Pause, CheckCircle2, Clock, Camera, Navigation,
-  AlertTriangle, Loader2, Upload, ChevronRight, HardHat
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+} from "@/components/ui/dialog";
+import {
+  MapPin, Phone, CheckCircle2, Clock, Camera, Navigation,
+  AlertTriangle, Loader2, ChevronRight, HardHat, Play, Pause,
+  ShieldCheck, Timer
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { logActivity, createNotification } from "@/lib/treeproWorkflow";
 
 const JOB_STATUS_ACTIONS = {
   scheduled: { label: "Start Drive", next: "dispatched", icon: Navigation, color: "bg-blue-600 hover:bg-blue-700" },
   dispatched: { label: "Arrived on Site", next: "in_progress", icon: MapPin, color: "bg-green-600 hover:bg-green-700" },
   in_progress: { label: "Complete Job", next: "completed", icon: CheckCircle2, color: "bg-primary hover:bg-primary/90" },
+  paused: { label: "Resume Job", next: "in_progress", icon: Play, color: "bg-yellow-600 hover:bg-yellow-700" },
 };
 
-function JobCard({ job, onUpdateStatus, onUploadPhoto }) {
+function SafetyChecklistDialog({ job, onClose, onSave }) {
+  const [form, setForm] = useState({
+    ppe_confirmed: false,
+    power_lines_checked: false,
+    drop_zone_confirmed: false,
+    traffic_control_needed: false,
+    customer_property_protected: false,
+    hazards_found: false,
+    hazard_description: "",
+    safe_to_proceed: true,
+    notes: "",
+  });
+
+  const checks = [
+    { key: "ppe_confirmed", label: "PPE confirmed (hard hats, gloves, chaps, eye/ear protection)" },
+    { key: "power_lines_checked", label: "Power line proximity checked" },
+    { key: "drop_zone_confirmed", label: "Drop zone cleared and secured" },
+    { key: "traffic_control_needed", label: "Traffic control needed (check if yes)" },
+    { key: "customer_property_protected", label: "Customer property protected (vehicles, landscaping)" },
+    { key: "hazards_found", label: "Any hazards found on site?" },
+  ];
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-green-600" /> Pre-Job Safety Checklist
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">Complete before starting work: <strong>{job.customer_name}</strong></p>
+          {checks.map(({ key, label }) => (
+            <label key={key} className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={!!form[key]}
+                onChange={e => setForm(f => ({ ...f, [key]: e.target.checked }))}
+                className="mt-0.5 w-4 h-4 accent-green-600"
+              />
+              <span className="text-sm leading-snug">{label}</span>
+            </label>
+          ))}
+          {form.hazards_found && (
+            <div className="space-y-1 pl-7">
+              <label className="text-xs font-medium text-muted-foreground">Describe the hazard(s):</label>
+              <Textarea
+                value={form.hazard_description}
+                onChange={e => setForm(f => ({ ...f, hazard_description: e.target.value }))}
+                rows={2}
+                placeholder="Describe hazards found..."
+                className="text-sm"
+              />
+              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-red-700">
+                <input
+                  type="checkbox"
+                  checked={!form.safe_to_proceed}
+                  onChange={e => setForm(f => ({ ...f, safe_to_proceed: !e.target.checked }))}
+                  className="w-4 h-4 accent-red-600"
+                />
+                Unsafe to proceed — stop work
+              </label>
+            </div>
+          )}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Additional notes:</label>
+            <Textarea
+              value={form.notes}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              rows={2}
+              placeholder="Any other site observations..."
+              className="text-sm"
+            />
+          </div>
+        </div>
+        <DialogFooter className="mt-2">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            onClick={() => onSave({ ...form, job_id: job.id, completed_by: "crew", completed_at: new Date().toISOString() })}
+            className="bg-green-600 hover:bg-green-700 gap-1.5"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Submit Checklist
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function JobCard({ job, onUpdateStatus, onUploadPhoto, onSafetyChecklist }) {
   const [notes, setNotes] = useState(job.notes || "");
   const [savingNotes, setSavingNotes] = useState(false);
   const qc = useQueryClient();
   const action = JOB_STATUS_ACTIONS[job.status];
+  const [clockedIn, setClockedIn] = useState(!!job.time_in);
+  const [clockingIn, setClockingIn] = useState(false);
 
   const saveNotes = async () => {
     setSavingNotes(true);
@@ -42,9 +140,34 @@ function JobCard({ job, onUpdateStatus, onUploadPhoto }) {
     if (job.customer_phone) window.location.href = `tel:${job.customer_phone}`;
   };
 
+  const handleClockIn = async () => {
+    setClockingIn(true);
+    const now = new Date().toISOString();
+    await base44.entities.Job.update(job.id, { time_in: now });
+    await base44.entities.TimeEntry.create({ employee_id: "crew", job_id: job.id, clock_in: now, status: "clocked_in" });
+    qc.invalidateQueries({ queryKey: ["crew_jobs"] });
+    setClockedIn(true);
+    setClockingIn(false);
+    toast.success("Clocked in — time tracking started");
+  };
+
+  const handleClockOut = async () => {
+    setClockingIn(true);
+    const now = new Date().toISOString();
+    await base44.entities.Job.update(job.id, { time_out: now });
+    const entries = await base44.entities.TimeEntry.filter({ job_id: job.id, status: "clocked_in" });
+    if (entries.length > 0) {
+      await base44.entities.TimeEntry.update(entries[0].id, { clock_out: now, status: "clocked_out" });
+    }
+    qc.invalidateQueries({ queryKey: ["crew_jobs"] });
+    setClockedIn(false);
+    setClockingIn(false);
+    toast.success("Clocked out");
+  };
+
   return (
     <Card className="overflow-hidden shadow-md">
-      <div className={`h-2 ${job.status === "in_progress" ? "bg-green-500" : job.status === "dispatched" ? "bg-blue-500" : "bg-muted"}`} />
+      <div className={`h-2 ${job.status === "in_progress" ? "bg-green-500" : job.status === "dispatched" ? "bg-blue-500" : job.status === "paused" ? "bg-yellow-500" : "bg-muted"}`} />
       <CardContent className="p-4 space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between">
@@ -55,9 +178,10 @@ function JobCard({ job, onUpdateStatus, onUploadPhoto }) {
           <Badge variant="outline" className={
             job.status === "in_progress" ? "border-green-500 text-green-700" :
             job.status === "completed" ? "border-gray-400 text-gray-600" :
+            job.status === "paused" ? "border-yellow-500 text-yellow-700" :
             "border-blue-400 text-blue-700"
           }>
-            {job.status?.replace("_", " ")}
+            {job.status?.replace(/_/g, " ")}
           </Badge>
         </div>
 
@@ -89,15 +213,59 @@ function JobCard({ job, onUpdateStatus, onUploadPhoto }) {
               <HardHat className="w-3 h-3" />{job.crew_name}
             </span>
           )}
+          {job.time_in && (
+            <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+              <Timer className="w-3 h-3" />In: {format(new Date(job.time_in), "h:mm a")}
+            </span>
+          )}
         </div>
 
-        {/* Hazard alert */}
-        {job.notes && job.notes.toLowerCase().includes("hazard") && (
+        {/* Hazard / risk alert */}
+        {(job.hazards || (job.notes && job.notes.toLowerCase().includes("hazard"))) && (
           <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-yellow-800 font-medium">Hazard noted — review site notes before starting</p>
+            <p className="text-xs text-yellow-800 font-medium">{job.hazards || "Hazard noted — review before starting"}</p>
           </div>
         )}
+
+        {/* Safety + Time tracking row */}
+        <div className="flex gap-2 flex-wrap">
+          {job.status === "in_progress" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onSafetyChecklist(job)}
+              className="gap-1.5 text-xs border-green-300 text-green-700"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" /> Safety Check
+            </Button>
+          )}
+          {(job.status === "in_progress" || job.status === "dispatched") && (
+            clockedIn ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClockOut}
+                disabled={clockingIn}
+                className="gap-1.5 text-xs border-red-300 text-red-700"
+              >
+                {clockingIn ? <Loader2 className="w-3 h-3 animate-spin" /> : <Pause className="w-3.5 h-3.5" />}
+                Clock Out
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClockIn}
+                disabled={clockingIn}
+                className="gap-1.5 text-xs border-blue-300 text-blue-700"
+              >
+                {clockingIn ? <Loader2 className="w-3 h-3 animate-spin" /> : <Timer className="w-3.5 h-3.5" />}
+                Clock In
+              </Button>
+            )
+          )}
+        </div>
 
         {/* Notes */}
         <div className="space-y-1">
@@ -119,7 +287,7 @@ function JobCard({ job, onUpdateStatus, onUploadPhoto }) {
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-1">Upload Photos</p>
           <div className="flex gap-2 flex-wrap">
-            {["before", "during", "after"].map(type => (
+            {["before", "during", "after", "hazard"].map(type => (
               <Button
                 key={type}
                 variant="outline"
@@ -133,7 +301,19 @@ function JobCard({ job, onUpdateStatus, onUploadPhoto }) {
           </div>
         </div>
 
-        {/* Action button */}
+        {/* Pause button while in progress */}
+        {job.status === "in_progress" && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-2 border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+            onClick={() => onUpdateStatus(job.id, "paused")}
+          >
+            <Pause className="w-4 h-4" /> Pause Job
+          </Button>
+        )}
+
+        {/* Main action button */}
         {action && job.status !== "completed" && (
           <Button
             className={`w-full h-12 text-base font-semibold gap-2 text-white ${action.color}`}
@@ -158,12 +338,11 @@ function JobCard({ job, onUpdateStatus, onUploadPhoto }) {
 export default function CrewMode() {
   const qc = useQueryClient();
   const [uploading, setUploading] = useState(false);
-  const fileRef = { current: null };
-  const [pendingUpload, setPendingUpload] = useState(null);
+  const [safetyJob, setSafetyJob] = useState(null);
 
   const { data: jobs = [], isLoading } = useQuery({
     queryKey: ["crew_jobs"],
-    queryFn: () => base44.entities.Job.filter({ status: ["scheduled", "dispatched", "in_progress"] }),
+    queryFn: () => base44.entities.Job.filter({ status: ["scheduled", "dispatched", "in_progress", "paused"] }),
   });
 
   const todayJobs = jobs.filter(j => {
@@ -173,13 +352,27 @@ export default function CrewMode() {
   });
 
   const updateStatus = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.Job.update(id, { status }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["crew_jobs"] }); toast.success("Status updated"); },
+    mutationFn: ({ id, status }) => {
+      const data = { status };
+      if (status === "completed") {
+        data.completion_date = new Date().toISOString().slice(0, 10);
+        data.time_out = data.time_out || new Date().toISOString();
+      }
+      return base44.entities.Job.update(id, data);
+    },
+    onSuccess: async (_, { id, status }) => {
+      qc.invalidateQueries({ queryKey: ["crew_jobs"] });
+      toast.success("Status updated");
+      if (status === "completed") {
+        const job = jobs.find(j => j.id === id);
+        await logActivity({ relatedType: "Job", relatedId: id, actor: "crew", action: "Job completed on site", notes: job?.customer_name || "" });
+        await createNotification({ type: "job_completed", title: `Job completed: ${job?.customer_name || ""}`, message: `Ready to invoice.`, relatedType: "Job", relatedId: id });
+      }
+    },
     onError: () => toast.error("Failed to update status"),
   });
 
   const handleUploadPhoto = (jobId, type) => {
-    setPendingUpload({ jobId, type });
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
@@ -192,9 +385,18 @@ export default function CrewMode() {
       await base44.entities.JobPhoto.create({ job_id: jobId, photo_url: file_url, type, uploaded_by: "crew" });
       setUploading(false);
       toast.success(`${type} photo uploaded`);
-      setPendingUpload(null);
     };
     input.click();
+  };
+
+  const handleSafetySubmit = async (checklistData) => {
+    await base44.entities.SafetyChecklist.create(checklistData);
+    await logActivity({ relatedType: "Job", relatedId: checklistData.job_id, actor: "crew", action: "Safety checklist completed", notes: checklistData.safe_to_proceed ? "Safe to proceed" : "UNSAFE — work stopped" });
+    if (!checklistData.safe_to_proceed) {
+      await createNotification({ type: "general", title: "⚠️ Unsafe Job Site", message: `Crew flagged safety issue — work stopped. Job ID: ${checklistData.job_id}`, relatedType: "Job", relatedId: checklistData.job_id });
+    }
+    setSafetyJob(null);
+    toast.success(checklistData.safe_to_proceed ? "Safety check submitted — safe to proceed" : "Safety issue reported");
   };
 
   if (isLoading) {
@@ -239,6 +441,7 @@ export default function CrewMode() {
               job={job}
               onUpdateStatus={(id, status) => updateStatus.mutate({ id, status })}
               onUploadPhoto={handleUploadPhoto}
+              onSafetyChecklist={(j) => setSafetyJob(j)}
             />
           ))}
         </div>
@@ -255,10 +458,19 @@ export default function CrewMode() {
                 job={job}
                 onUpdateStatus={(id, status) => updateStatus.mutate({ id, status })}
                 onUploadPhoto={handleUploadPhoto}
+                onSafetyChecklist={(j) => setSafetyJob(j)}
               />
             ))}
           </div>
         </div>
+      )}
+
+      {safetyJob && (
+        <SafetyChecklistDialog
+          job={safetyJob}
+          onClose={() => setSafetyJob(null)}
+          onSave={handleSafetySubmit}
+        />
       )}
     </div>
   );

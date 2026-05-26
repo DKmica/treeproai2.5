@@ -2,6 +2,15 @@
   "name": "Lead",
   "type": "object",
   "properties": {
+    "company_id": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "updated_by": {
+      "type": "string"
+    },
     "first_name": {
       "type": "string",
       "description": "Lead's first name"
@@ -41,10 +50,14 @@
       "enum": [
         "new",
         "contacted",
+        "attempting_contact",
+        "left_voicemail",
         "qualified",
         "quoted",
+        "negotiating",
         "won",
-        "lost"
+        "lost",
+        "disqualified"
       ],
       "default": "new",
       "description": "Current lead status"
@@ -97,6 +110,21 @@
       "type": "string",
       "format": "date",
       "description": "Date of last contact attempt"
+    },
+    "estimated_value": {
+      "type": "number"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "campaign": {
+      "type": "string"
+    },
+    "converted_customer_id": {
+      "type": "string"
     }
   },
   "required": [

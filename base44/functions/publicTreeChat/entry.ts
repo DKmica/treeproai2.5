@@ -93,7 +93,64 @@ Respond as the AI Arborist. Be specific, helpful, and professional. If you have 
       ...(image_urls && image_urls.length > 0 && { file_urls: image_urls }),
     });
 
-    return Response.json({ reply: response });
+    // If it looks like a final estimate has been given, extract structured data
+    let structuredAssessment = null;
+    const replyText = typeof response === "string" ? response : JSON.stringify(response);
+    const hasPriceRange = /\$[\d,]+\s*[–\-–to]+\s*\$[\d,]+/i.test(replyText);
+    if (hasPriceRange && messages && messages.length >= 3) {
+      const structurePrompt = `Based on this tree assessment conversation, extract structured data as JSON:
+---
+${replyText}
+---
+
+Return a JSON object with these fields (use null for unknown):
+{
+  "detected_species": string or null,
+  "estimated_height_ft_low": number or null,
+  "estimated_height_ft_high": number or null,
+  "estimated_dbh_inches_low": number or null,
+  "estimated_dbh_inches_high": number or null,
+  "condition_summary": string or null,
+  "hazards_detected": string or null,
+  "access_difficulty": "easy"|"moderate"|"difficult"|"very_difficult"|null,
+  "risk_level": "low"|"moderate"|"high"|"extreme"|null,
+  "urgency_level": "low"|"normal"|"high"|"emergency"|null,
+  "crane_likely": boolean,
+  "stump_grinding_likely": boolean,
+  "recommended_service": string or null,
+  "price_low": number or null,
+  "price_high": number or null,
+  "confidence_score": number between 0-1,
+  "ai_reasoning_summary": string or null
+}`;
+      structuredAssessment = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: structurePrompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            detected_species: { type: "string" },
+            estimated_height_ft_low: { type: "number" },
+            estimated_height_ft_high: { type: "number" },
+            estimated_dbh_inches_low: { type: "number" },
+            estimated_dbh_inches_high: { type: "number" },
+            condition_summary: { type: "string" },
+            hazards_detected: { type: "string" },
+            access_difficulty: { type: "string" },
+            risk_level: { type: "string" },
+            urgency_level: { type: "string" },
+            crane_likely: { type: "boolean" },
+            stump_grinding_likely: { type: "boolean" },
+            recommended_service: { type: "string" },
+            price_low: { type: "number" },
+            price_high: { type: "number" },
+            confidence_score: { type: "number" },
+            ai_reasoning_summary: { type: "string" }
+          }
+        }
+      });
+    }
+
+    return Response.json({ reply: replyText, structured_assessment: structuredAssessment });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

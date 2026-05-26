@@ -1,0 +1,46 @@
+{
+  "name": "PublicWidgetSettings",
+  "type": "object",
+  "properties": {
+    "widget_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "widget_title": {
+      "type": "string",
+      "default": "Get a Free Estimate"
+    },
+    "widget_color": {
+      "type": "string",
+      "default": "#16a34a"
+    },
+    "embed_code": {
+      "type": "string"
+    },
+    "allowed_domains": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "max_photos": {
+      "type": "number",
+      "default": 10
+    },
+    "require_phone": {
+      "type": "boolean",
+      "default": true
+    },
+    "require_email": {
+      "type": "boolean",
+      "default": false
+    },
+    "success_message": {
+      "type": "string"
+    },
+    "redirect_url": {
+      "type": "string"
+    }
+  },
+  "required": []
+}
