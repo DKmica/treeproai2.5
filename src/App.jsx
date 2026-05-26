@@ -14,6 +14,7 @@ import Quotes from '@/pages/Quotes';
 import Jobs from '@/pages/Jobs';
 import Equipment from '@/pages/Equipment';
 import Analytics from '@/pages/Analytics';
+import TreeAssessment from '@/pages/TreeAssessment';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -45,6 +46,7 @@ const AuthenticatedApp = () => {
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/equipment" element={<Equipment />} />
         <Route path="/analytics" element={<Analytics />} />
+        <Route path="/tree-assessment" element={<TreeAssessment />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
