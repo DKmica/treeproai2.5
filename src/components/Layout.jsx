@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { 
   LayoutDashboard, Users, TreePine, FileText, Briefcase, 
-  Wrench, BarChart3, Menu, X, ChevronRight, ScanSearch, TrendingUp
+  Wrench, BarChart3, Menu, X, ChevronRight, ScanSearch, TrendingUp, HardHat
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ const navItems = [
   { path: "/analytics", label: "Analytics", icon: BarChart3 },
   { path: "/sales", label: "Sales", icon: TrendingUp },
   { path: "/tree-assessment", label: "AI Assessment", icon: ScanSearch },
+  { path: "/employees", label: "Employees", icon: HardHat },
 ];
 
 function NavLink({ item, collapsed, onClick }) {

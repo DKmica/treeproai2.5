@@ -1,0 +1,62 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string",
+      "enum": [
+        "salesman",
+        "crew_leader",
+        "groundman",
+        "stump_grinder"
+      ],
+      "description": "Employee's position"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "hire_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "pay_rate": {
+      "type": "number",
+      "description": "Hourly or daily pay rate"
+    },
+    "pay_type": {
+      "type": "string",
+      "enum": [
+        "hourly",
+        "daily",
+        "salary",
+        "commission"
+      ],
+      "default": "hourly"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name",
+    "position"
+  ]
+}
