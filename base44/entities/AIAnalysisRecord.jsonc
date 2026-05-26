@@ -81,6 +81,11 @@
       "type": "boolean",
       "default": false
     },
+    "crane_required": {
+      "type": "boolean",
+      "default": false,
+      "description": "Crane is required for safe removal"
+    },
     "bucket_truck_likely": {
       "type": "boolean",
       "default": false
@@ -89,30 +94,100 @@
       "type": "boolean",
       "default": false
     },
+    "structures_nearby": {
+      "type": "boolean",
+      "default": false,
+      "description": "Nearby structures (house, garage, fence, etc)"
+    },
+    "canopy_over_structure": {
+      "type": "boolean",
+      "default": false,
+      "description": "Canopy overhangs a structure"
+    },
+    "limited_drop_zone": {
+      "type": "boolean",
+      "default": false,
+      "description": "Limited space to drop wood/branches"
+    },
     "stump_grinding_likely": {
       "type": "boolean",
       "default": false
     },
     "cleanup_volume_estimate": {
-      "type": "string"
+      "type": "string",
+      "description": "Estimated cleanup volume in cubic yards or descriptive (e.g., 15-20 cubic yards)"
     },
     "recommended_service": {
       "type": "string"
     },
     "price_low": {
-      "type": "number"
+      "type": "number",
+      "description": "Low estimate price"
     },
     "price_high": {
-      "type": "number"
+      "type": "number",
+      "description": "High estimate price"
     },
     "confidence_score": {
-      "type": "number"
+      "type": "number",
+      "description": "Confidence in estimate (0-100)"
     },
     "missing_info_questions": {
       "type": "string"
     },
     "ai_reasoning_summary": {
       "type": "string"
+    },
+    "complexity_score": {
+      "type": "number",
+      "description": "Calculated complexity score (0-100)"
+    },
+    "complexity_tier": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high",
+        "extreme"
+      ],
+      "description": "Complexity tier based on score"
+    },
+    "pricing_floor": {
+      "type": "number",
+      "description": "Minimum price enforced for this job"
+    },
+    "range_width_percent": {
+      "type": "number",
+      "description": "Recommended price range width percentage"
+    },
+    "no_crane_price_low": {
+      "type": "number",
+      "description": "Price low for removal without crane"
+    },
+    "no_crane_price_high": {
+      "type": "number",
+      "description": "Price high for removal without crane"
+    },
+    "crane_required_price_low": {
+      "type": "number",
+      "description": "Price low if crane is required"
+    },
+    "crane_required_price_high": {
+      "type": "number",
+      "description": "Price high if crane is required"
+    },
+    "stump_price_low": {
+      "type": "number",
+      "description": "Optional stump grinding price low"
+    },
+    "stump_price_high": {
+      "type": "number",
+      "description": "Optional stump grinding price high"
+    },
+    "pricing_scenarios": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Detailed pricing scenarios (removal, with crane, with stump, etc)"
     },
     "human_review_status": {
       "type": "string",

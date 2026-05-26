@@ -60,29 +60,45 @@ function ReviewDialog({ record, onClose, onSave }) {
         </DialogHeader>
 
         {/* AI Structured Data */}
-        <div className="bg-muted rounded-lg p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold">AI Assessment Data</h4>
-            <button onClick={() => setExpanded(v => !v)} className="text-xs text-primary flex items-center gap-1">
-              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              {expanded ? "Less" : "More detail"}
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4">
-            <DetailRow label="Price Range" value={record.price_low ? `$${record.price_low?.toLocaleString()} – $${record.price_high?.toLocaleString()}` : null} className="text-green-700" />
-            <DetailRow label="Confidence" value={record.confidence_score ? `${Math.round(record.confidence_score * 100)}%` : null} />
-            <DetailRow label="Species" value={record.detected_species} />
-            <DetailRow label="Risk Level" value={record.risk_level} className={RISK_COLORS[record.risk_level]} />
-            <DetailRow label="Recommended" value={record.recommended_service} />
-            <DetailRow label="Urgency" value={record.urgency_level} />
-            {expanded && <>
-              <DetailRow label="Height" value={record.estimated_height_ft_low ? `${record.estimated_height_ft_low}–${record.estimated_height_ft_high}ft` : null} />
-              <DetailRow label="DBH" value={record.estimated_dbh_inches_low ? `${record.estimated_dbh_inches_low}–${record.estimated_dbh_inches_high}"` : null} />
-              <DetailRow label="Crane Likely" value={record.crane_likely ? "Yes" : record.crane_likely === false ? "No" : null} />
-              <DetailRow label="Stump Grind" value={record.stump_grinding_likely ? "Yes" : record.stump_grinding_likely === false ? "No" : null} />
-              <DetailRow label="Access" value={record.access_difficulty} />
-            </>}
-          </div>
+         <div className="bg-muted rounded-lg p-4 space-y-2">
+           <div className="flex items-center justify-between">
+             <h4 className="text-sm font-semibold">AI Assessment Data</h4>
+             <button onClick={() => setExpanded(v => !v)} className="text-xs text-primary flex items-center gap-1">
+               {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+               {expanded ? "Less" : "More detail"}
+             </button>
+           </div>
+           <div className="grid grid-cols-2 gap-x-4">
+             <DetailRow label="Price Range" value={record.price_low ? `$${record.price_low?.toLocaleString()} – $${record.price_high?.toLocaleString()}` : null} className="text-green-700" />
+             <DetailRow label="Confidence" value={record.confidence_score ? `${Math.round(record.confidence_score)}%` : null} />
+             <DetailRow label="Species" value={record.detected_species} />
+             <DetailRow label="Risk Level" value={record.risk_level} className={RISK_COLORS[record.risk_level]} />
+             <DetailRow label="Recommended" value={record.recommended_service} />
+             <DetailRow label="Urgency" value={record.urgency_level} />
+             {record.complexity_score !== undefined && (
+               <DetailRow label="Complexity Score" value={`${Math.round(record.complexity_score)}/100 (${record.complexity_tier})`} className="font-semibold" />
+             )}
+             {record.pricing_floor && (
+               <DetailRow label="Pricing Floor" value={`$${record.pricing_floor.toLocaleString()}`} className="text-blue-600 font-medium" />
+             )}
+             {expanded && <>
+               <DetailRow label="Height" value={record.estimated_height_ft_low ? `${record.estimated_height_ft_low}–${record.estimated_height_ft_high}ft` : null} />
+               <DetailRow label="DBH" value={record.estimated_dbh_inches_low ? `${record.estimated_dbh_inches_low}–${record.estimated_dbh_inches_high}"` : null} />
+               <DetailRow label="Crane Likely" value={record.crane_likely ? "Yes" : record.crane_likely === false ? "No" : null} />
+               <DetailRow label="Crane Required" value={record.crane_required ? "Yes" : record.crane_required === false ? "No" : null} />
+               <DetailRow label="Structures Nearby" value={record.structures_nearby ? "Yes" : record.structures_nearby === false ? "No" : null} />
+               <DetailRow label="Canopy Over Structure" value={record.canopy_over_structure ? "Yes" : record.canopy_over_structure === false ? "No" : null} />
+               <DetailRow label="Limited Drop Zone" value={record.limited_drop_zone ? "Yes" : record.limited_drop_zone === false ? "No" : null} />
+               <DetailRow label="Stump Grind" value={record.stump_grinding_likely ? "Yes" : record.stump_grinding_likely === false ? "No" : null} />
+               <DetailRow label="Access" value={record.access_difficulty} />
+               {record.no_crane_price_low && (
+                 <DetailRow label="No Crane Est." value={`$${record.no_crane_price_low?.toLocaleString()}–$${record.no_crane_price_high?.toLocaleString()}`} />
+               )}
+               {record.crane_required_price_low && (
+                 <DetailRow label="With Crane Est." value={`$${record.crane_required_price_low?.toLocaleString()}–$${record.crane_required_price_high?.toLocaleString()}`} />
+               )}
+             </>}
+           </div>
           {record.condition_summary && (
             <p className="text-xs text-muted-foreground mt-1 pt-1 border-t">{record.condition_summary}</p>
           )}

@@ -15,6 +15,7 @@ function getSizeCategory(heightFt) {
 
 /**
  * Core pricing engine — reads CompanySettings, returns line_items + totals.
+ * Applies complexity-based minimum price floors.
  */
 function buildPricingFromSettings(trees, extractedData, s) {
   const laborRate = s.default_labor_rate_per_hour || 75;
@@ -28,6 +29,10 @@ function buildPricingFromSettings(trees, extractedData, s) {
   const dumpBase = s.dump_fee_base || 75;
   const disposalPerYard = s.disposal_fee_per_cubic_yard || 25;
   const minPrice = s.minimum_job_price || 150;
+  const minLargeRemoval = s.minimum_large_removal_price || 4500;
+  const minHighRisk = s.minimum_high_risk_removal_price || 6500;
+  const minExtreme = s.minimum_extreme_removal_price || 8500;
+  const minCrane = s.minimum_crane_removal_price || 10500;
 
   // Base crew hours and pricing by size/service
   const BASE_HOURS = {
@@ -115,12 +120,35 @@ function buildPricingFromSettings(trees, extractedData, s) {
     totalAmount += s.travel_fee_base;
   }
 
+  // Determine complexity-based minimum price floor
+  let appliedMinimum = minPrice;
+  for (const tree of trees) {
+    if (tree.recommended_service === 'removal' || tree.recommended_service === 'emergency_removal') {
+      const height = tree.height_ft || 0;
+      const diameter = tree.diameter_in || 0;
+      const risk = tree.risk_level || 'low';
+      const craneNeeded = tree.needs_crane || height > 60;
+      
+      // Apply complexity-based minimum
+      if (height >= 70 && diameter >= 36 && (tree.hazards?.includes('structure') || risk === 'extreme')) {
+        // Extreme complexity
+        appliedMinimum = Math.max(appliedMinimum, craneNeeded ? minCrane : minExtreme);
+      } else if (height >= 50 && (tree.hazards?.includes('structure') || risk === 'high')) {
+        // High risk
+        appliedMinimum = Math.max(appliedMinimum, craneNeeded ? minCrane : minHighRisk);
+      } else if (height >= 50 || diameter >= 24) {
+        // Large tree
+        appliedMinimum = Math.max(appliedMinimum, minLargeRemoval);
+      }
+    }
+  }
+
   // Ensure minimum
-  if (totalAmount < minPrice && lineItems.length > 0) {
-    const diff = minPrice - totalAmount;
+  if (totalAmount < appliedMinimum && lineItems.length > 0) {
+    const diff = appliedMinimum - totalAmount;
     lineItems[0].unit_price += diff;
     lineItems[0].total += diff;
-    totalAmount = minPrice;
+    totalAmount = appliedMinimum;
   }
 
   return { lineItems, totalAmount };

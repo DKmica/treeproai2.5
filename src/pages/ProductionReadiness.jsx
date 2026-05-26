@@ -75,6 +75,7 @@ export default function ProductionReadiness() {
   const hasDisclaimer = !!s?.public_estimate_disclaimer;
   const hasTerms = !!s?.terms_and_conditions;
   const hasPricing = s && (s.minimum_job_price || 0) > 0 && (s.crew_hourly_rate || 0) > 0;
+  const hasPricingFloors = s && (s.minimum_large_removal_price || 0) > 0 && (s.minimum_extreme_removal_price || 0) > 0 && (s.minimum_crane_removal_price || 0) > 0;
   const hasPortal = !!s?.customer_portal_enabled;
   const hasWidget = !!s?.public_widget_enabled;
   const hasServiceArea = !!s?.service_area_description;
@@ -117,7 +118,7 @@ export default function ProductionReadiness() {
   if (loadingSettings) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
 
   // Score calculations
-  const companyChecks = [hasCompanyName, hasPhone, hasEmail, hasServiceArea, hasPricing, hasLogo].filter(Boolean).length;
+  const companyChecks = [hasCompanyName, hasPhone, hasEmail, hasServiceArea, hasPricing, hasPricingFloors, hasLogo].filter(Boolean).length;
   const contentChecks = [hasDisclaimer, hasTerms, hasPortal].filter(Boolean).length;
   const workflowChecks = [hasPublicLead, hasAIAnalysis, hasReviewedAnalysis, hasApprovedQuote, hasConvertedQuoteToJob, hasCompletedJob, hasPaymentRecorded, hasPaidInvoice].filter(Boolean).length;
   const teamChecks = [hasCrews, hasEmployees, hasSalespeople, hasCustomers].filter(Boolean).length;
@@ -125,7 +126,7 @@ export default function ProductionReadiness() {
   const integrationChecks = [hasPaymentIntegration, hasEmailIntegration, hasSMSIntegration, hasAccountingIntegration].filter(Boolean).length;
 
   const totalPass = companyChecks + contentChecks + workflowChecks + teamChecks + dataChecks;
-  const totalItems = 6 + 3 + 8 + 4 + 4;
+  const totalItems = 7 + 3 + 8 + 4 + 4;
   const overallPct = Math.round((totalPass / totalItems) * 100);
 
   return (
@@ -158,12 +159,13 @@ export default function ProductionReadiness() {
         </CardContent>
       </Card>
 
-      <Section title="Company Setup" score={companyChecks} total={6}>
+      <Section title="Company Setup" score={companyChecks} total={7}>
         <CheckItem label="Company name configured (no demo/hardcoded branding)" pass={hasCompanyName} link={!hasCompanyName ? "/settings" : null} note={!hasCompanyName ? "Remove any Dallas/DFW/Accurate Tree/demo references" : "Company name looks good"} />
         <CheckItem label="Phone number configured" pass={hasPhone} link={!hasPhone ? "/settings" : null} />
         <CheckItem label="Email address configured" pass={hasEmail} link={!hasEmail ? "/settings" : null} />
         <CheckItem label="Service area description" pass={hasServiceArea} link={!hasServiceArea ? "/settings" : null} />
-        <CheckItem label="Pricing rates configured" pass={hasPricing} link={!hasPricing ? "/settings" : null} note="Minimum job price, labor rate, crew rate" />
+        <CheckItem label="Base pricing rates configured" pass={hasPricing} link={!hasPricing ? "/settings" : null} note="Minimum job price, labor rate, crew rate" />
+        <CheckItem label="Complexity-based pricing floors configured" pass={hasPricingFloors} link={!hasPricingFloors ? "/settings" : null} note="Minimums for large/high-risk/extreme/crane removals — ensures realistic pricing for complex trees" />
         <CheckItem label="Logo uploaded" pass={hasLogo} warning={!hasLogo} link="/settings" note="Optional but recommended for professional appearance" />
       </Section>
 
