@@ -95,7 +95,7 @@ Respond as the AI Arborist. Be specific, helpful, and professional. If you have 
 
     const response = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
-      model: "claude_sonnet_4_6",
+      model: "gemini_3_1_pro",
       ...(image_urls && image_urls.length > 0 && { file_urls: image_urls }),
     });
 
