@@ -179,32 +179,54 @@ export default function PublicEstimate() {
   }, [messages, isTyping]);
 
   const startConversation = async () => {
-    const conv = await base44.agents.createConversation({
-      agent_name: AGENT_NAME,
-      metadata: { name: "Public Estimate Session" },
-    });
-    setConversation(conv);
-    conversationRef.current = conv;
-
-    const unsub = base44.agents.subscribeToConversation(conv.id, (data) => {
-      setMessages([...data.messages]);
-      const lastMsg = data.messages[data.messages.length - 1];
-      if (lastMsg?.role === "assistant" && lastMsg?.content) {
+    try {
+      // Ensure guest/public session exists before using agent
+      const isAuthed = await base44.auth.isAuthenticated();
+      if (!isAuthed) {
+        // For public pages, we need to sign in as a guest
+        // Show the lead capture form directly as fallback
+        setMessages([{
+          role: "assistant",
+          content: "Welcome to Accurate Tree and Landscaping Services! 🌳\n\nTo get your free AI-powered tree assessment, please fill out the form below and one of our certified arborists will reach out to you with a detailed estimate.",
+        }]);
         setIsTyping(false);
-        const fullText = data.messages.filter((m) => m.content)
-          .map((m) => `${m.role === "user" ? "Customer" : "AI Arborist"}: ${m.content}`)
-          .join("\n\n");
-        setQuoteText(fullText);
+        return;
       }
-    });
 
-    setIsTyping(true);
-    await base44.agents.addMessage(conv, {
-      role: "user",
-      content: "Hello, I need help assessing my tree(s) and getting a free estimate.",
-    });
+      const conv = await base44.agents.createConversation({
+        agent_name: AGENT_NAME,
+        metadata: { name: "Public Estimate Session" },
+      });
+      setConversation(conv);
+      conversationRef.current = conv;
 
-    return () => unsub();
+      const unsub = base44.agents.subscribeToConversation(conv.id, (data) => {
+        setMessages([...data.messages]);
+        const lastMsg = data.messages[data.messages.length - 1];
+        if (lastMsg?.role === "assistant" && lastMsg?.content) {
+          setIsTyping(false);
+          const fullText = data.messages.filter((m) => m.content)
+            .map((m) => `${m.role === "user" ? "Customer" : "AI Arborist"}: ${m.content}`)
+            .join("\n\n");
+          setQuoteText(fullText);
+        }
+      });
+
+      setIsTyping(true);
+      await base44.agents.addMessage(conv, {
+        role: "user",
+        content: "Hello, I need help assessing my tree(s) and getting a free estimate.",
+      });
+
+      return () => unsub();
+    } catch (err) {
+      console.error("Agent error:", err);
+      setMessages([{
+        role: "assistant",
+        content: "Welcome to Accurate Tree and Landscaping Services! 🌳\n\nTo get your free tree service estimate, please fill out the form below and one of our certified arborists will contact you shortly.",
+      }]);
+      setIsTyping(false);
+    }
   };
 
   const handleFileUpload = async (e) => {
@@ -248,7 +270,8 @@ export default function PublicEstimate() {
   );
 
   const aiResponseCount = messages.filter((m) => m.role === "assistant").length;
-  const showCapturePrompt = aiResponseCount >= 2 && !leadCreated;
+  // Show capture form: after 2 AI responses, OR immediately if no agent session (public/unauthenticated)
+  const showCapturePrompt = (aiResponseCount >= 1 && !conversation) || (aiResponseCount >= 2 && !leadCreated);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-950 via-green-900 to-stone-900 flex flex-col">
