@@ -16,6 +16,7 @@ import Equipment from '@/pages/Equipment';
 import Analytics from '@/pages/Analytics';
 import TreeAssessment from '@/pages/TreeAssessment';
 import Sales from '@/pages/Sales';
+import PublicEstimate from '@/pages/PublicEstimate';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -50,6 +51,7 @@ const AuthenticatedApp = () => {
         <Route path="/tree-assessment" element={<TreeAssessment />} />
         <Route path="/sales" element={<Sales />} />
       </Route>
+      <Route path="/estimate" element={<PublicEstimate />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
