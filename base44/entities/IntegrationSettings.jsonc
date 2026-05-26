@@ -1,0 +1,53 @@
+{
+  "name": "IntegrationSettings",
+  "type": "object",
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": [
+        "stripe",
+        "square",
+        "quickbooks",
+        "xero",
+        "google_calendar",
+        "google_maps",
+        "twilio",
+        "sendgrid",
+        "zapier",
+        "make",
+        "mailchimp",
+        "other"
+      ]
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_connected",
+        "connected",
+        "error",
+        "setup_required"
+      ],
+      "default": "not_connected"
+    },
+    "config_notes": {
+      "type": "string"
+    },
+    "connected_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "is_enabled": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "provider"
+  ]
+}

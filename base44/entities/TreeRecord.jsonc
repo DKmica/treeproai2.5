@@ -5,22 +5,14 @@
     "customer_id": {
       "type": "string"
     },
-    "address": {
-      "type": "string",
-      "description": "Property address where tree is located"
+    "property_id": {
+      "type": "string"
     },
     "species": {
       "type": "string"
     },
-    "common_name": {
-      "type": "string"
-    },
-    "height_ft": {
+    "species_confidence": {
       "type": "number"
-    },
-    "diameter_in": {
-      "type": "number",
-      "description": "Diameter at breast height in inches"
     },
     "condition": {
       "type": "string",
@@ -29,7 +21,8 @@
         "good",
         "fair",
         "poor",
-        "dead"
+        "dead",
+        "hazardous"
       ],
       "default": "good"
     },
@@ -43,17 +36,42 @@
       ],
       "default": "low"
     },
-    "photo_urls": {
+    "location_description": {
+      "type": "string"
+    },
+    "height_estimate_ft": {
+      "type": "number"
+    },
+    "dbh_inches": {
+      "type": "number"
+    },
+    "canopy_spread_ft": {
+      "type": "number"
+    },
+    "photos": {
       "type": "array",
       "items": {
         "type": "string"
       }
     },
-    "ai_analysis": {
+    "last_service_date": {
       "type": "string",
-      "description": "JSON string of AI analysis results"
+      "format": "date"
+    },
+    "recommended_next_service": {
+      "type": "string"
+    },
+    "next_service_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "ai_analysis_id": {
+      "type": "string"
     },
     "notes": {
+      "type": "string"
+    },
+    "address": {
       "type": "string"
     }
   },

@@ -5,7 +5,7 @@ import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, Users, TreePine, FileText, Briefcase,
   Wrench, BarChart3, Menu, X, ChevronRight, ScanSearch, TrendingUp,
-  HardHat, Settings, Receipt, Bell, CheckSquare, Building2, Shield
+  HardHat, Settings, Receipt, Bell, CheckSquare, Building2, Shield, Plug
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ const navGroups = [
       { path: "/jobs", label: "Jobs", icon: Briefcase },
       { path: "/crew-mode", label: "Crew Mode", icon: HardHat },
       { path: "/equipment", label: "Equipment", icon: Wrench },
+      { path: "/maintenance", label: "Maintenance", icon: CheckSquare },
       { path: "/invoices", label: "Invoices", icon: Receipt },
     ],
   },
@@ -41,13 +42,15 @@ const navGroups = [
     label: "AI Tools",
     items: [
       { path: "/tree-assessment", label: "AI Assessment", icon: ScanSearch },
-      { path: "/ai-analysis", label: "AI Analysis", icon: CheckSquare },
+      { path: "/ai-analysis", label: "AI Analysis", icon: ScanSearch },
+      { path: "/tree-inventory", label: "Tree Inventory", icon: TreePine },
     ],
   },
   {
     label: "Admin",
     items: [
       { path: "/employees", label: "Team", icon: Users },
+      { path: "/integrations", label: "Integrations", icon: Plug },
       { path: "/settings", label: "Company Settings", icon: Building2 },
       { path: "/production-readiness", label: "Go-Live Checklist", icon: Shield },
     ],

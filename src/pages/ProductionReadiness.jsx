@@ -48,44 +48,84 @@ function Section({ title, children, score, total }) {
 }
 
 export default function ProductionReadiness() {
-  const { data: settings = [], isLoading: loadingSettings } = useQuery({
-    queryKey: ["company_settings"],
-    queryFn: () => base44.entities.CompanySettings.list(),
-  });
+  const { data: settings = [], isLoading: loadingSettings } = useQuery({ queryKey: ["company_settings"], queryFn: () => base44.entities.CompanySettings.list() });
   const { data: employees = [] } = useQuery({ queryKey: ["employees"], queryFn: () => base44.entities.Employee.list() });
   const { data: quotes = [] } = useQuery({ queryKey: ["quotes"], queryFn: () => base44.entities.Quote.list() });
   const { data: jobs = [] } = useQuery({ queryKey: ["jobs"], queryFn: () => base44.entities.Job.list() });
   const { data: invoices = [] } = useQuery({ queryKey: ["invoices"], queryFn: () => base44.entities.Invoice.list() });
   const { data: salespersons = [] } = useQuery({ queryKey: ["salespersons"], queryFn: () => base44.entities.Salesperson.list() });
   const { data: crews = [] } = useQuery({ queryKey: ["crews"], queryFn: () => base44.entities.Crew.list() });
+  const { data: leads = [] } = useQuery({ queryKey: ["leads"], queryFn: () => base44.entities.Lead.list() });
+  const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: () => base44.entities.Customer.list() });
+  const { data: aiRecords = [] } = useQuery({ queryKey: ["ai_analysis"], queryFn: () => base44.entities.AIAnalysisRecord.list() });
+  const { data: equipment = [] } = useQuery({ queryKey: ["equipment"], queryFn: () => base44.entities.Equipment.list() });
+  const { data: integrations = [] } = useQuery({ queryKey: ["integration_settings"], queryFn: () => base44.entities.IntegrationSettings.list() });
+  const { data: trees = [] } = useQuery({ queryKey: ["trees"], queryFn: () => base44.entities.TreeRecord.list() });
+  const { data: maintenance = [] } = useQuery({ queryKey: ["maintenance"], queryFn: () => base44.entities.MaintenanceRecord.list() });
+  const { data: notifications = [] } = useQuery({ queryKey: ["notifications"], queryFn: () => base44.entities.Notification.list() });
+  const { data: activityLogs = [] } = useQuery({ queryKey: ["activity_logs"], queryFn: () => base44.entities.ActivityLog.list() });
+  const { data: payments = [] } = useQuery({ queryKey: ["payments"], queryFn: () => base44.entities.Payment.list() });
 
   const s = settings[0] || null;
-  const hasCompanyName = !!s?.company_name && s.company_name !== "Your Tree Service Company";
+
+  // Company setup checks
+  const hasCompanyName = !!s?.company_name && s.company_name !== "Your Tree Service Company" && !["accurate tree","dallas","demo"].some(v => s.company_name?.toLowerCase().includes(v));
   const hasPhone = !!s?.phone && s.phone !== "(555) 000-0000";
   const hasEmail = !!s?.email;
   const hasDisclaimer = !!s?.public_estimate_disclaimer;
   const hasTerms = !!s?.terms_and_conditions;
-  const hasPricing = s && s.minimum_job_price > 0 && s.crew_hourly_rate > 0;
+  const hasPricing = s && (s.minimum_job_price || 0) > 0 && (s.crew_hourly_rate || 0) > 0;
   const hasPortal = !!s?.customer_portal_enabled;
   const hasWidget = !!s?.public_widget_enabled;
   const hasServiceArea = !!s?.service_area_description;
+  const hasLogo = !!s?.logo_url;
 
-  const hasApprovedQuote = quotes.some(q => q.status === "approved" || q.status === "converted_to_job");
-  const hasCompletedJob = jobs.some(j => j.status === "completed" || j.status === "invoiced" || j.status === "paid");
+  // Workflow checks
+  const hasApprovedQuote = quotes.some(q => ["approved", "converted_to_job", "invoiced", "paid"].includes(q.status));
+  const hasCompletedJob = jobs.some(j => ["completed", "invoiced", "paid"].includes(j.status));
   const hasPaidInvoice = invoices.some(i => i.status === "paid");
+  const hasConvertedQuoteToJob = quotes.some(q => q.status === "converted_to_job");
+  const hasCrewCompleted = jobs.some(j => j.status === "completed" && j.crew_id);
+  const hasPublicLead = leads.some(l => l.source === "website" || l.source === "form");
+  const hasAIAnalysis = aiRecords.length > 0;
+  const hasReviewedAnalysis = aiRecords.some(r => r.human_review_status === "reviewed" || r.human_review_status === "corrected");
+  const hasPaymentRecorded = payments.length > 0;
+
+  // Team checks
   const hasCrews = crews.length > 0;
   const hasEmployees = employees.length > 0;
   const hasSalespeople = salespersons.length > 0;
 
+  // Data checks
+  const hasCustomers = customers.length > 0;
+  const hasEquipment = equipment.length > 0;
+  const hasMaintenanceRecord = maintenance.length > 0;
+  const hasTreeInventory = trees.length > 0;
+  const hasNotifications = notifications.length > 0;
+  const hasActivityLog = activityLogs.length > 0;
+
+  // Integration checks
+  const getIntegrationStatus = (provider) => integrations.find(i => i.provider === provider)?.status || "not_connected";
+  const hasPaymentIntegration = ["stripe","square"].some(p => getIntegrationStatus(p) === "connected");
+  const hasEmailIntegration = getIntegrationStatus("sendgrid") === "connected";
+  const hasSMSIntegration = getIntegrationStatus("twilio") === "connected";
+  const hasAccountingIntegration = ["quickbooks","xero"].some(p => getIntegrationStatus(p) === "connected");
+
+  // No hardcoded demo branding
+  const noHardcodedBranding = hasCompanyName;
+
   if (loadingSettings) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
 
-  const companyChecks = [hasCompanyName, hasPhone, hasEmail, hasServiceArea, hasPricing].filter(Boolean).length;
-  const contentChecks = [hasDisclaimer, hasTerms].filter(Boolean).length;
-  const workflowChecks = [hasApprovedQuote, hasCompletedJob, hasPaidInvoice].filter(Boolean).length;
-  const teamChecks = [hasCrews, hasEmployees, hasSalespeople].filter(Boolean).length;
+  // Score calculations
+  const companyChecks = [hasCompanyName, hasPhone, hasEmail, hasServiceArea, hasPricing, hasLogo].filter(Boolean).length;
+  const contentChecks = [hasDisclaimer, hasTerms, hasPortal].filter(Boolean).length;
+  const workflowChecks = [hasPublicLead, hasAIAnalysis, hasReviewedAnalysis, hasApprovedQuote, hasConvertedQuoteToJob, hasCompletedJob, hasPaymentRecorded, hasPaidInvoice].filter(Boolean).length;
+  const teamChecks = [hasCrews, hasEmployees, hasSalespeople, hasCustomers].filter(Boolean).length;
+  const dataChecks = [hasEquipment, hasMaintenanceRecord, hasTreeInventory, hasActivityLog].filter(Boolean).length;
+  const integrationChecks = [hasPaymentIntegration, hasEmailIntegration, hasSMSIntegration, hasAccountingIntegration].filter(Boolean).length;
 
-  const totalPass = companyChecks + contentChecks + workflowChecks + teamChecks;
-  const totalItems = 5 + 2 + 3 + 3;
+  const totalPass = companyChecks + contentChecks + workflowChecks + teamChecks + dataChecks;
+  const totalItems = 6 + 3 + 8 + 4 + 4;
   const overallPct = Math.round((totalPass / totalItems) * 100);
 
   return (
@@ -101,7 +141,7 @@ export default function ProductionReadiness() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold text-lg">{overallPct}% Ready</p>
-              <p className="text-sm text-muted-foreground">{totalPass} of {totalItems} items complete</p>
+              <p className="text-sm text-muted-foreground">{totalPass} of {totalItems} core items complete</p>
             </div>
             {overallPct === 100 ? (
               <CheckCircle2 className="w-10 h-10 text-green-600" />
@@ -118,40 +158,55 @@ export default function ProductionReadiness() {
         </CardContent>
       </Card>
 
-      <Section title="Company Setup" score={companyChecks} total={5}>
-        <CheckItem label="Company name configured" pass={hasCompanyName} link={!hasCompanyName ? "/settings" : null} note={!hasCompanyName ? "Set your real company name in Company Settings" : null} />
+      <Section title="Company Setup" score={companyChecks} total={6}>
+        <CheckItem label="Company name configured (no demo/hardcoded branding)" pass={hasCompanyName} link={!hasCompanyName ? "/settings" : null} note={!hasCompanyName ? "Remove any Dallas/DFW/Accurate Tree/demo references" : "Company name looks good"} />
         <CheckItem label="Phone number configured" pass={hasPhone} link={!hasPhone ? "/settings" : null} />
         <CheckItem label="Email address configured" pass={hasEmail} link={!hasEmail ? "/settings" : null} />
         <CheckItem label="Service area description" pass={hasServiceArea} link={!hasServiceArea ? "/settings" : null} />
         <CheckItem label="Pricing rates configured" pass={hasPricing} link={!hasPricing ? "/settings" : null} note="Minimum job price, labor rate, crew rate" />
+        <CheckItem label="Logo uploaded" pass={hasLogo} warning={!hasLogo} link="/settings" note="Optional but recommended for professional appearance" />
       </Section>
 
-      <Section title="Legal & Content" score={contentChecks} total={2}>
+      <Section title="Legal & Content" score={contentChecks} total={3}>
         <CheckItem label="Public estimate disclaimer" pass={hasDisclaimer} link={!hasDisclaimer ? "/settings" : null} note="Appears on customer-facing estimate pages" />
-        <CheckItem label="Terms & conditions" pass={hasTerms} warning={!hasTerms} link="/settings" note="Optional but recommended for professional proposals" />
+        <CheckItem label="Terms & conditions" pass={hasTerms} warning={!hasTerms} link="/settings" note="Recommended for professional proposals" />
+        <CheckItem label="Customer portal enabled" pass={hasPortal} warning={!hasPortal} link="/settings" note="Required for customer quote approval links" />
       </Section>
 
-      <Section title="Workflow Verification" score={workflowChecks} total={3}>
+      <Section title="End-to-End Workflow" score={workflowChecks} total={8}>
+        <CheckItem label="At least one lead from public estimate" pass={hasPublicLead} warning={!hasPublicLead} note="Test the public /estimate page" link="/estimate" />
+        <CheckItem label="AI analysis record created" pass={hasAIAnalysis} warning={!hasAIAnalysis} note="Created when customers use public estimate" link="/ai-analysis" />
+        <CheckItem label="AI analysis reviewed by staff" pass={hasReviewedAnalysis} warning={!hasReviewedAnalysis} link="/ai-analysis" />
         <CheckItem label="At least one quote approved" pass={hasApprovedQuote} warning={!hasApprovedQuote} note="Test the quote approval workflow" link="/quotes" />
-        <CheckItem label="At least one job completed" pass={hasCompletedJob} warning={!hasCompletedJob} note="Test the job completion workflow" link="/jobs" />
-        <CheckItem label="At least one invoice paid" pass={hasPaidInvoice} warning={!hasPaidInvoice} note="Test the payment recording workflow" link="/invoices" />
+        <CheckItem label="Quote converted to job" pass={hasConvertedQuoteToJob} warning={!hasConvertedQuoteToJob} link="/quotes" />
+        <CheckItem label="At least one job completed" pass={hasCompletedJob} warning={!hasCompletedJob} note="Complete a job via Crew Mode or Jobs page" link="/jobs" />
+        <CheckItem label="Payment recorded" pass={hasPaymentRecorded} warning={!hasPaymentRecorded} note="Record a payment on an invoice" link="/invoices" />
+        <CheckItem label="At least one invoice paid" pass={hasPaidInvoice} warning={!hasPaidInvoice} link="/invoices" />
       </Section>
 
-      <Section title="Team Setup" score={teamChecks} total={3}>
+      <Section title="Team Setup" score={teamChecks} total={4}>
         <CheckItem label="Crew configured" pass={hasCrews} warning={!hasCrews} link="/jobs" note="Add at least one crew to assign jobs" />
         <CheckItem label="Employees added" pass={hasEmployees} link="/employees" note="Add team members for time tracking" />
-        <CheckItem label="Sales team configured" pass={hasSalespeople} warning={!hasSalespeople} link="/sales" note="Add salespersons for lead assignment" />
+        <CheckItem label="Sales team configured" pass={hasSalespeople} warning={!hasSalespeople} link="/sales" />
+        <CheckItem label="Customers in system" pass={hasCustomers} warning={!hasCustomers} link="/customers" />
       </Section>
 
-      <Section title="Integrations (Future)" score={0} total={4}>
-        <CheckItem label="Payment processing (Stripe/Square)" pass={false} warning note="Integration required — set up in IntegrationSettings when ready" />
-        <CheckItem label="Email notifications (SMTP/SendGrid)" pass={false} warning note="Integration required — needed for auto-emails to customers" />
-        <CheckItem label="SMS notifications (Twilio)" pass={false} warning note="Integration required — for crew dispatch alerts" />
-        <CheckItem label="Accounting integration (QuickBooks/Xero)" pass={false} warning note="Integration required — for financial sync" />
+      <Section title="Data & Records" score={dataChecks} total={4}>
+        <CheckItem label="Equipment tracked" pass={hasEquipment} warning={!hasEquipment} link="/equipment" />
+        <CheckItem label="Maintenance records logged" pass={hasMaintenanceRecord} warning={!hasMaintenanceRecord} link="/maintenance" />
+        <CheckItem label="Tree inventory started" pass={hasTreeInventory} warning={!hasTreeInventory} link="/tree-inventory" note="Track customer trees for repeat business" />
+        <CheckItem label="Activity logs being created" pass={hasActivityLog} warning={!hasActivityLog} note="Created automatically as you use the platform" />
+      </Section>
+
+      <Section title="Integrations (External Setup Required)" score={integrationChecks} total={4}>
+        <CheckItem label="Payment processing (Stripe/Square)" pass={hasPaymentIntegration} warning={!hasPaymentIntegration} note="Integration required — configure in Integrations" link="/integrations" />
+        <CheckItem label="Email notifications (SendGrid)" pass={hasEmailIntegration} warning={!hasEmailIntegration} note="Integration required — for auto-emails to customers" link="/integrations" />
+        <CheckItem label="SMS notifications (Twilio)" pass={hasSMSIntegration} warning={!hasSMSIntegration} note="Integration required — for crew dispatch alerts" link="/integrations" />
+        <CheckItem label="Accounting integration (QuickBooks/Xero)" pass={hasAccountingIntegration} warning={!hasAccountingIntegration} note="Integration required — for financial sync" link="/integrations" />
       </Section>
 
       <div className="text-xs text-muted-foreground text-center pb-4">
-        Items marked with ⚠ are recommended but not blocking. Items marked ✗ should be fixed before going live.
+        ✓ = Ready · ⚠ = Recommended but optional · ✗ = Action required before going live with real customers
       </div>
     </div>
   );

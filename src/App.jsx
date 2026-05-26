@@ -26,6 +26,9 @@ import ProductionReadiness from '@/pages/ProductionReadiness';
 import Notifications from '@/pages/Notifications';
 import QuoteDetail from '@/pages/QuoteDetail';
 import CustomerPortal from '@/pages/CustomerPortal';
+import TreeInventory from '@/pages/TreeInventory';
+import EquipmentMaintenance from '@/pages/EquipmentMaintenance';
+import Integrations from '@/pages/Integrations';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -67,6 +70,9 @@ const AuthenticatedApp = () => {
         <Route path="/production-readiness" element={<ProductionReadiness />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/quotes/:id" element={<QuoteDetail />} />
+        <Route path="/tree-inventory" element={<TreeInventory />} />
+        <Route path="/maintenance" element={<EquipmentMaintenance />} />
+        <Route path="/integrations" element={<Integrations />} />
       </Route>
       <Route path="/estimate" element={<PublicEstimate />} />
       <Route path="/portal/:token" element={<CustomerPortal />} />

@@ -1,0 +1,65 @@
+{
+  "name": "MaintenanceRecord",
+  "type": "object",
+  "properties": {
+    "equipment_id": {
+      "type": "string"
+    },
+    "equipment_name": {
+      "type": "string"
+    },
+    "maintenance_type": {
+      "type": "string",
+      "enum": [
+        "oil_change",
+        "filter_replacement",
+        "blade_sharpening",
+        "inspection",
+        "repair",
+        "overhaul",
+        "other"
+      ],
+      "default": "inspection"
+    },
+    "description": {
+      "type": "string"
+    },
+    "cost": {
+      "type": "number",
+      "default": 0
+    },
+    "performed_by": {
+      "type": "string"
+    },
+    "performed_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "hours_at_service": {
+      "type": "number"
+    },
+    "next_due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_due_hours": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "completed",
+        "cancelled"
+      ],
+      "default": "completed"
+    }
+  },
+  "required": [
+    "equipment_id",
+    "maintenance_type"
+  ]
+}
