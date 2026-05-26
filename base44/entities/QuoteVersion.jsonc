@@ -1,0 +1,45 @@
+{
+  "name": "QuoteVersion",
+  "type": "object",
+  "properties": {
+    "quote_id": {
+      "type": "string"
+    },
+    "version_number": {
+      "type": "number"
+    },
+    "line_items": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "subtotal": {
+      "type": "number"
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "tax_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "total": {
+      "type": "number"
+    },
+    "changed_by": {
+      "type": "string"
+    },
+    "change_reason": {
+      "type": "string"
+    },
+    "status_at_save": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "quote_id",
+    "version_number"
+  ]
+}

@@ -8,20 +8,27 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, Sparkles, FileText, Loader2 } from "lucide-react";
+import { Plus, Search, MoreVertical, Sparkles, FileText, Loader2, ChevronRight } from "lucide-react";
 import QuoteForm from "@/components/quotes/QuoteForm";
 import GenerateFromAssessmentModal from "@/components/quotes/GenerateFromAssessmentModal";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const statusColors = {
   draft: "bg-muted text-muted-foreground",
+  needs_review: "bg-yellow-100 text-yellow-700",
   sent: "bg-blue-100 text-blue-700",
-  accepted: "bg-green-100 text-green-700",
+  viewed: "bg-indigo-100 text-indigo-700",
+  approved: "bg-green-100 text-green-700",
   rejected: "bg-red-100 text-red-700",
   expired: "bg-orange-100 text-orange-700",
+  converted_to_job: "bg-teal-100 text-teal-700",
+  invoiced: "bg-purple-100 text-purple-700",
+  paid: "bg-emerald-100 text-emerald-700",
 };
 
 export default function Quotes() {
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
@@ -145,9 +152,10 @@ Include common tree services like trimming, removal, stump grinding. Generate re
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate(`/quotes/${q.id}`)}>View Details</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setEditing(q)}>Edit</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => updateMutation.mutate({ id: q.id, data: { status: "sent" } })}>Mark Sent</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => updateMutation.mutate({ id: q.id, data: { status: "accepted" } })}>Mark Accepted</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => updateMutation.mutate({ id: q.id, data: { status: "approved" } })}>Mark Approved</DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(q.id)}>Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

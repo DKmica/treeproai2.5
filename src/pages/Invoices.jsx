@@ -13,7 +13,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
-  FileText, Plus, Search, MoreVertical, DollarSign, AlertCircle, CheckCircle2, Loader2, Eye
+  FileText, Plus, Search, MoreVertical, DollarSign, AlertCircle, CheckCircle2, Loader2, Eye, CreditCard
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -165,11 +165,64 @@ function InvoiceDialog({ invoice, customers, onClose, onSave }) {
   );
 }
 
+function RecordPaymentDialog({ invoice, onClose, onSave }) {
+  const [amount, setAmount] = useState(invoice.balance_due || invoice.total || 0);
+  const [method, setMethod] = useState("cash");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    await onSave({ amount: parseFloat(amount), method, notes });
+    setSaving(false);
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Record Payment</DialogTitle></DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <Label>Amount *</Label>
+            <Input type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required />
+            <p className="text-xs text-muted-foreground">Balance due: ${(invoice.balance_due || 0).toLocaleString()}</p>
+          </div>
+          <div className="space-y-1">
+            <Label>Payment Method</Label>
+            <select className="w-full border rounded-md h-9 px-3 text-sm bg-background" value={method} onChange={e => setMethod(e.target.value)}>
+              <option value="cash">Cash</option>
+              <option value="check">Check</option>
+              <option value="credit_card">Credit Card</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="venmo">Venmo</option>
+              <option value="zelle">Zelle</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label>Notes</Label>
+            <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Check #, transaction ID, etc." />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={saving} className="gap-1.5">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CreditCard className="w-3.5 h-3.5" />}
+              Record Payment
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Invoices() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [payingInvoice, setPayingInvoice] = useState(null);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ["invoices"],
@@ -201,7 +254,36 @@ export default function Invoices() {
     onError: () => toast.error("Failed to delete invoice"),
   });
 
-  const markPaid = (inv) => updateMut.mutate({ id: inv.id, data: { ...inv, status: "paid", amount_paid: inv.total, balance_due: 0 } });
+  const recordPayment = async (inv, { amount, method, notes }) => {
+    const newAmountPaid = (inv.amount_paid || 0) + amount;
+    const newBalance = Math.max((inv.total || 0) - newAmountPaid, 0);
+    const newStatus = newBalance <= 0 ? "paid" : "partially_paid";
+
+    // Create Payment record
+    await base44.entities.Payment.create({
+      invoice_id: inv.id,
+      customer_id: inv.customer_id,
+      customer_name: inv.customer_name,
+      amount,
+      method,
+      status: "completed",
+      paid_at: new Date().toISOString(),
+      notes,
+    });
+
+    // Update invoice
+    updateMut.mutate({ id: inv.id, data: { amount_paid: newAmountPaid, balance_due: newBalance, status: newStatus } });
+
+    // If fully paid, create notification
+    if (newStatus === "paid") {
+      base44.entities.Notification.create({ type: "general", title: `Invoice ${inv.invoice_number} fully paid`, message: `${inv.customer_name} — $${(inv.total || 0).toLocaleString()}`, read: false });
+    }
+
+    setPayingInvoice(null);
+    toast.success(newStatus === "paid" ? "Invoice marked as paid!" : `Payment of $${amount.toLocaleString()} recorded`);
+  };
+
+  const markPaid = (inv) => updateMut.mutate({ id: inv.id, data: { status: "paid", amount_paid: inv.total, balance_due: 0 } });
 
   const filtered = invoices.filter(inv =>
     (inv.customer_name || "").toLowerCase().includes(search.toLowerCase()) ||
@@ -305,9 +387,14 @@ export default function Invoices() {
                         <DropdownMenuItem onClick={() => setEditing(inv)}>
                           <Eye className="w-4 h-4 mr-2" />Edit
                         </DropdownMenuItem>
+                        {inv.status !== "paid" && inv.status !== "void" && (
+                          <DropdownMenuItem onClick={() => setPayingInvoice(inv)}>
+                            <CreditCard className="w-4 h-4 mr-2" />Record Payment
+                          </DropdownMenuItem>
+                        )}
                         {inv.status !== "paid" && (
                           <DropdownMenuItem onClick={() => markPaid(inv)}>
-                            <CheckCircle2 className="w-4 h-4 mr-2" />Mark Paid
+                            <CheckCircle2 className="w-4 h-4 mr-2" />Mark Fully Paid
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
@@ -326,6 +413,13 @@ export default function Invoices() {
         </div>
       )}
 
+      {payingInvoice && (
+        <RecordPaymentDialog
+          invoice={payingInvoice}
+          onClose={() => setPayingInvoice(null)}
+          onSave={(data) => recordPayment(payingInvoice, data)}
+        />
+      )}
       {(showForm || editing) && (
         <InvoiceDialog
           invoice={editing}

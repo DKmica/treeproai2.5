@@ -8,6 +8,14 @@
     "logo_url": {
       "type": "string"
     },
+    "primary_color": {
+      "type": "string",
+      "default": "#16a34a"
+    },
+    "secondary_color": {
+      "type": "string",
+      "default": "#f59e0b"
+    },
     "phone": {
       "type": "string"
     },
@@ -113,6 +121,14 @@
     "public_widget_enabled": {
       "type": "boolean",
       "default": true
+    },
+    "max_upload_photos": {
+      "type": "number",
+      "default": 10
+    },
+    "max_photo_size_mb": {
+      "type": "number",
+      "default": 10
     }
   },
   "required": [

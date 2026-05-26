@@ -8,23 +8,61 @@
     "customer_name": {
       "type": "string"
     },
+    "customer_phone": {
+      "type": "string"
+    },
+    "customer_email": {
+      "type": "string"
+    },
     "quote_id": {
+      "type": "string"
+    },
+    "ai_analysis_id": {
       "type": "string"
     },
     "status": {
       "type": "string",
       "enum": [
+        "unscheduled",
         "scheduled",
+        "dispatched",
         "in_progress",
+        "paused",
         "completed",
+        "needs_follow_up",
+        "invoiced",
+        "paid",
         "cancelled"
       ],
       "default": "scheduled"
     },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "emergency"
+      ],
+      "default": "normal"
+    },
     "description": {
       "type": "string"
     },
+    "scope_of_work": {
+      "type": "string"
+    },
     "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "scheduled_start": {
+      "type": "string"
+    },
+    "scheduled_end": {
+      "type": "string"
+    },
+    "completion_date": {
       "type": "string",
       "format": "date"
     },
@@ -37,8 +75,47 @@
     "crew_name": {
       "type": "string"
     },
+    "assigned_equipment_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "route_order": {
+      "type": "number"
+    },
+    "dispatch_notes": {
+      "type": "string"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high",
+        "extreme"
+      ]
+    },
+    "hazards": {
+      "type": "string"
+    },
+    "safety_notes": {
+      "type": "string"
+    },
+    "required_crew_size": {
+      "type": "number"
+    },
+    "estimated_duration_hours": {
+      "type": "number"
+    },
     "total_cost": {
       "type": "number"
+    },
+    "line_items": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
     },
     "satisfaction_rating": {
       "type": "number"
@@ -46,9 +123,8 @@
     "notes": {
       "type": "string"
     },
-    "completion_date": {
-      "type": "string",
-      "format": "date"
+    "invoice_id": {
+      "type": "string"
     }
   },
   "required": [

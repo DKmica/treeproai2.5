@@ -1,0 +1,55 @@
+{
+  "name": "Payment",
+  "type": "object",
+  "properties": {
+    "invoice_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "check",
+        "credit_card",
+        "bank_transfer",
+        "venmo",
+        "zelle",
+        "other"
+      ],
+      "default": "cash"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "failed",
+        "refunded"
+      ],
+      "default": "completed"
+    },
+    "transaction_id": {
+      "type": "string"
+    },
+    "paid_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "invoice_id",
+    "amount"
+  ]
+}

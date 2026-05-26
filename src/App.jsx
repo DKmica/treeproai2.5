@@ -24,6 +24,8 @@ import CrewMode from '@/pages/CrewMode';
 import AIAnalysis from '@/pages/AIAnalysis';
 import ProductionReadiness from '@/pages/ProductionReadiness';
 import Notifications from '@/pages/Notifications';
+import QuoteDetail from '@/pages/QuoteDetail';
+import CustomerPortal from '@/pages/CustomerPortal';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -64,8 +66,10 @@ const AuthenticatedApp = () => {
         <Route path="/ai-analysis" element={<AIAnalysis />} />
         <Route path="/production-readiness" element={<ProductionReadiness />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/quotes/:id" element={<QuoteDetail />} />
       </Route>
       <Route path="/estimate" element={<PublicEstimate />} />
+      <Route path="/portal/:token" element={<CustomerPortal />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

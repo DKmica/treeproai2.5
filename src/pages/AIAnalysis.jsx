@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import {
   ScanSearch, Search, Loader2, CheckCircle2, AlertCircle, Clock,
-  XCircle, Eye, TreePine, DollarSign
+  XCircle, Eye, TreePine, DollarSign, Sparkles
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -112,9 +113,11 @@ function ReviewDialog({ record, onClose, onSave }) {
 }
 
 export default function AIAnalysis() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [reviewing, setReviewing] = useState(null);
+  const [generatingQuote, setGeneratingQuote] = useState(null);
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ["ai_analysis"],
@@ -228,6 +231,48 @@ export default function AIAnalysis() {
                       <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setReviewing(record)}>
                         <Eye className="w-3.5 h-3.5" />Review
                       </Button>
+                      {(record.human_review_status === "reviewed" || record.human_review_status === "corrected") && !record.quote_id && (
+                        <Button
+                          size="sm"
+                          className="gap-1.5 bg-primary"
+                          disabled={generatingQuote === record.id}
+                          onClick={async () => {
+                            setGeneratingQuote(record.id);
+                            const settingsArr = await base44.entities.CompanySettings.list();
+                            const s = settingsArr[0] || {};
+                            const price = record.human_final_price || record.price_high || 500;
+                            const lineItems = [{ description: record.recommended_service || "Tree Service", quantity: 1, unit_price: price, total: price }];
+                            if (record.stump_grinding_likely) {
+                              const stumpPrice = (s.stump_grinding_base_price || 100) + ((record.estimated_dbh_inches_high || 12) * (s.stump_grinding_per_inch || 4));
+                              lineItems.push({ description: "Stump Grinding", quantity: 1, unit_price: stumpPrice, total: stumpPrice });
+                            }
+                            const total = lineItems.reduce((sum, i) => sum + i.total, 0);
+                            const expiryDate = new Date(Date.now() + (s.quote_expiration_days || 30) * 86400000).toISOString().split("T")[0];
+                            const quote = await base44.entities.Quote.create({
+                              quote_number: `Q-${Date.now().toString(36).toUpperCase()}`,
+                              customer_id: record.customer_id || "",
+                              lead_id: record.lead_id || "",
+                              ai_analysis_id: record.id,
+                              line_items: lineItems,
+                              subtotal: total,
+                              total_amount: Math.max(total, s.minimum_job_price || 150),
+                              ai_generated: true,
+                              ai_analysis: record.ai_reasoning_summary || record.condition_summary || "",
+                              scope_of_work: record.recommended_service || "",
+                              status: "draft",
+                              valid_until: expiryDate,
+                            });
+                            await base44.entities.AIAnalysisRecord.update(record.id, { quote_id: quote.id });
+                            qc.invalidateQueries({ queryKey: ["ai_analysis"] });
+                            toast.success("Quote created!");
+                            setGeneratingQuote(null);
+                            navigate(`/quotes/${quote.id}`);
+                          }}
+                        >
+                          {generatingQuote === record.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                          Generate Quote
+                        </Button>
+                      )}
                     </div>
                   </div>
 

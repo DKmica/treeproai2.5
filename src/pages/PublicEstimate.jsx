@@ -7,10 +7,13 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import {
   TreePine, Send, Upload, X, Loader2, CheckCircle2,
-  Star, Shield, User
+  Star, Shield, User, AlertCircle
 } from "lucide-react";
 
-// ── Message bubble ───────────────────────────────────────────────────────────
+const MAX_PHOTOS = 10;
+const MAX_FILE_MB = 10;
+const MAX_MESSAGES = 20;
+
 function MessageBubble({ message }) {
   const isUser = message.role === "user";
   return (
@@ -71,20 +74,33 @@ function TypingIndicator() {
   );
 }
 
-// ── Lead capture form ────────────────────────────────────────────────────────
-function LeadCaptureForm({ assessmentText, onLeadCreated }) {
+function LeadCaptureForm({ assessmentText, photoUrls, onLeadCreated, company }) {
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "" });
+  const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = "Name is required";
+    if (!form.phone.trim()) e.phone = "Phone is required";
+    if (form.phone && !/^[\d\s\-\+\(\)\.]{7,}$/.test(form.phone)) e.phone = "Enter a valid phone number";
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Enter a valid email";
+    return e;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const v = validate();
+    if (Object.keys(v).length) { setErrors(v); return; }
     setSubmitting(true);
+
     const [first_name, ...rest] = form.name.trim().split(" ");
     const last_name = rest.join(" ") || "";
-    await base44.functions.invoke("ingestLead", {
-      first_name,
-      last_name,
+
+    // Create lead via ingestLead function
+    const leadRes = await base44.functions.invoke("ingestLead", {
+      first_name, last_name,
       phone: form.phone,
       email: form.email,
       address: form.address,
@@ -92,6 +108,50 @@ function LeadCaptureForm({ assessmentText, onLeadCreated }) {
       source: "website",
       urgency: "normal",
     });
+
+    const leadId = leadRes.data?.lead_id;
+
+    // Find or create customer
+    let customerId = null;
+    try {
+      const existing = await base44.entities.Customer.filter({ email: form.email });
+      if (existing.length > 0) {
+        customerId = existing[0].id;
+      } else {
+        const cust = await base44.entities.Customer.create({
+          first_name, last_name,
+          email: form.email,
+          phone: form.phone,
+          address: form.address,
+          notes: "Created from public estimate form",
+        });
+        customerId = cust.id;
+      }
+    } catch (_) { /* proceed without customer link */ }
+
+    // Create AIAnalysisRecord
+    if (leadId || customerId) {
+      try {
+        await base44.entities.AIAnalysisRecord.create({
+          lead_id: leadId || "",
+          customer_id: customerId || "",
+          image_urls: photoUrls || [],
+          original_customer_notes: assessmentText?.slice(0, 3000) || "",
+          human_review_status: "pending",
+        });
+      } catch (_) { /* non-blocking */ }
+    }
+
+    // Create notification
+    try {
+      await base44.entities.Notification.create({
+        type: "new_lead",
+        title: `New estimate request from ${form.name}`,
+        message: `Phone: ${form.phone}${form.address ? ` · ${form.address}` : ""}`,
+        read: false,
+      });
+    } catch (_) { /* non-blocking */ }
+
     setDone(true);
     setSubmitting(false);
     onLeadCreated?.();
@@ -115,10 +175,45 @@ function LeadCaptureForm({ assessmentText, onLeadCreated }) {
     <form onSubmit={handleSubmit} className="space-y-3">
       <h3 className="font-semibold text-gray-900">Get your free on-site quote</h3>
       <p className="text-sm text-gray-500">Leave your details and we'll follow up to confirm your estimate.</p>
-      <Input required placeholder="Your full name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-white border-gray-300" />
-      <Input required type="tel" placeholder="Phone number *" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="bg-white border-gray-300" />
-      <Input type="email" placeholder="Email address" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="bg-white border-gray-300" />
-      <Input placeholder="Property address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="bg-white border-gray-300" />
+      <div>
+        <Input
+          required
+          placeholder="Your full name *"
+          value={form.name}
+          onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors(p => ({ ...p, name: "" })); }}
+          className={cn("bg-white border-gray-300", errors.name && "border-red-400")}
+        />
+        {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+      </div>
+      <div>
+        <Input
+          required
+          type="tel"
+          placeholder="Phone number *"
+          value={form.phone}
+          onChange={(e) => { setForm({ ...form, phone: e.target.value }); setErrors(p => ({ ...p, phone: "" })); }}
+          className={cn("bg-white border-gray-300", errors.phone && "border-red-400")}
+        />
+        {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
+      </div>
+      <div>
+        <Input
+          type="email"
+          placeholder="Email address"
+          value={form.email}
+          onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors(p => ({ ...p, email: "" })); }}
+          className={cn("bg-white border-gray-300", errors.email && "border-red-400")}
+        />
+        {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
+      </div>
+      <Input
+        placeholder="Property address"
+        value={form.address}
+        onChange={(e) => setForm({ ...form, address: e.target.value })}
+        className="bg-white border-gray-300"
+      />
+      {/* Honeypot — hidden from real users */}
+      <input type="text" name="website_url" className="hidden" tabIndex={-1} autoComplete="off" />
       <Button type="submit" disabled={submitting} className="w-full bg-green-700 hover:bg-green-800 text-white h-11 text-base font-semibold gap-2">
         {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
         {submitting ? "Sending..." : "Get My Free Quote →"}
@@ -128,7 +223,6 @@ function LeadCaptureForm({ assessmentText, onLeadCreated }) {
   );
 }
 
-// ── Main Page ────────────────────────────────────────────────────────────────
 export default function PublicEstimate() {
   const [messages, setMessages] = useState([]);
   const [quoteText, setQuoteText] = useState("");
@@ -136,19 +230,23 @@ export default function PublicEstimate() {
   const [sending, setSending] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [leadCreated, setLeadCreated] = useState(false);
+  const [company, setCompany] = useState(null);
+  const [allPhotoUrls, setAllPhotoUrls] = useState([]);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Send opening greeting on mount
+  // Rate limiting: track message timestamps
+  const msgTimestamps = useRef([]);
+
   useEffect(() => {
+    base44.entities.CompanySettings.list().then(arr => { if (arr[0]) setCompany(arr[0]); });
     sendToAI("Hello, I need help assessing my tree(s) and getting a free estimate.", [], []);
   }, []);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, sending]);
 
   const sendToAI = async (userText, currentMessages, imageUrls) => {
@@ -168,6 +266,23 @@ export default function PublicEstimate() {
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
+    setUploadError("");
+
+    const maxPhotos = company?.max_upload_photos || MAX_PHOTOS;
+    const maxMb = company?.max_photo_size_mb || MAX_FILE_MB;
+
+    if (uploadedFiles.length + files.length > maxPhotos) {
+      setUploadError(`Maximum ${maxPhotos} photos allowed.`);
+      e.target.value = "";
+      return;
+    }
+
+    const invalid = files.find(f => !f.type.startsWith("image/"));
+    if (invalid) { setUploadError("Only image files are allowed (JPG, PNG, etc.)"); e.target.value = ""; return; }
+
+    const tooBig = files.find(f => f.size > maxMb * 1024 * 1024);
+    if (tooBig) { setUploadError(`Each photo must be under ${maxMb}MB.`); e.target.value = ""; return; }
+
     setUploading(true);
     const urls = [];
     for (const file of files) {
@@ -175,6 +290,7 @@ export default function PublicEstimate() {
       urls.push(file_url);
     }
     setUploadedFiles((prev) => [...prev, ...urls]);
+    setAllPhotoUrls((prev) => [...prev, ...urls]);
     setUploading(false);
     e.target.value = "";
   };
@@ -183,12 +299,34 @@ export default function PublicEstimate() {
 
   const sendMessage = async () => {
     if ((!input.trim() && uploadedFiles.length === 0) || sending) return;
-    const text = input.trim();
+
+    // Max messages guard
+    const userMsgs = messages.filter(m => m.role === "user").length;
+    if (userMsgs >= MAX_MESSAGES) {
+      setInput("");
+      return;
+    }
+
+    // Client-side rate limiting: max 3 messages in 10 seconds
+    const now = Date.now();
+    msgTimestamps.current = msgTimestamps.current.filter(t => now - t < 10000);
+    if (msgTimestamps.current.length >= 3) {
+      setUploadError("Please wait a moment before sending another message.");
+      return;
+    }
+    msgTimestamps.current.push(now);
+    setUploadError("");
+
+    // Basic spam detection
+    const spam = /\b(buy now|click here|free money|winner|prize|casino|viagra|xxx)\b/i.test(input);
+    if (spam) { setInput(""); return; }
+
+    const text = input.trim().slice(0, 2000);
     const files = [...uploadedFiles];
     setInput("");
     setUploadedFiles([]);
 
-    const userMessage = { role: "user", content: text || "Please analyze these tree images.", ...(files.length > 0 && { file_urls: files }) };
+    const userMessage = { role: "user", content: text || "Please analyze these tree photos.", ...(files.length > 0 && { file_urls: files }) };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
 
@@ -199,26 +337,29 @@ export default function PublicEstimate() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
-  // Filter out the silent opening message from display
   const displayMessages = messages.filter(
     (m, i) => !(i === 0 && m.role === "user" && m.content?.includes("Hello, I need help assessing"))
   );
 
   const aiResponseCount = messages.filter((m) => m.role === "assistant").length;
   const showCapturePrompt = aiResponseCount >= 2 && !leadCreated;
+  const companyName = company?.company_name || "Professional Tree Service";
+  const disclaimer = company?.public_estimate_disclaimer || "This is a preliminary AI estimate. A certified arborist will provide your final quote on-site.";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-950 via-green-900 to-stone-900 flex flex-col">
-      {/* Hero Header */}
       <header className="pt-8 pb-4 px-4 text-center">
         <div className="inline-flex items-center gap-2 mb-4">
           <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center border border-white/20">
-            <TreePine className="w-5 h-5 text-green-300" />
+            {company?.logo_url
+              ? <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain rounded-xl" />
+              : <TreePine className="w-5 h-5 text-green-300" />
+            }
           </div>
-          <span className="text-white font-bold text-xl tracking-tight">Tree Service Estimator</span>
+          <span className="text-white font-bold text-xl tracking-tight">{companyName}</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight max-w-xl mx-auto">
-          Get a Free Tree Service Estimate in Minutes
+          Get a Free Tree Service Estimate
         </h1>
         <p className="text-green-200 mt-2 text-base max-w-md mx-auto">
           Upload photos of your tree and our AI arborist will give you a detailed assessment and cost estimate — instantly, 24/7.
@@ -231,12 +372,8 @@ export default function PublicEstimate() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 px-4 pb-8 max-w-2xl mx-auto w-full flex flex-col gap-4">
-
-        {/* Chat Card */}
         <div className="bg-gray-50 rounded-3xl overflow-hidden shadow-2xl flex flex-col" style={{ minHeight: 480 }}>
-          {/* Chat header */}
           <div className="bg-green-800 px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
               <TreePine className="w-4 h-4 text-white" />
@@ -252,7 +389,6 @@ export default function PublicEstimate() {
             </div>
           </div>
 
-          {/* Messages */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4" style={{ maxHeight: 400 }}>
             {displayMessages.length === 0 && sending && (
               <div className="flex flex-col items-center justify-center h-40 gap-3 text-center">
@@ -267,7 +403,6 @@ export default function PublicEstimate() {
             {sending && <TypingIndicator />}
           </div>
 
-          {/* Image preview strip */}
           {uploadedFiles.length > 0 && (
             <div className="px-4 py-2 border-t border-gray-200 bg-gray-100 flex gap-2 flex-wrap">
               {uploadedFiles.map((url, i) => (
@@ -281,15 +416,35 @@ export default function PublicEstimate() {
             </div>
           )}
 
-          {/* Input area */}
+          {uploadError && (
+            <div className="px-4 py-2 bg-red-50 border-t border-red-200 flex items-center gap-2 text-xs text-red-700">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {uploadError}
+            </div>
+          )}
+
           <div className="px-4 py-3 border-t border-gray-200 bg-white flex items-end gap-2">
-            <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileUpload} />
-            <Button variant="outline" size="icon" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="shrink-0 h-10 w-10 border-gray-300" title="Upload tree photos">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || uploadedFiles.length >= (company?.max_upload_photos || MAX_PHOTOS)}
+              className="shrink-0 h-10 w-10 border-gray-300"
+              title="Upload tree photos"
+            >
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-gray-500" />}
             </Button>
             <Input
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => setInput(e.target.value.slice(0, 2000))}
               onKeyDown={handleKeyDown}
               placeholder="Describe your tree or upload a photo..."
               className="flex-1 border-gray-300 bg-gray-50"
@@ -306,14 +461,17 @@ export default function PublicEstimate() {
           </div>
         </div>
 
-        {/* Lead Capture Card */}
         {showCapturePrompt && (
           <div className="bg-white rounded-3xl shadow-2xl p-6 border border-green-100">
-            <LeadCaptureForm assessmentText={quoteText} onLeadCreated={() => setLeadCreated(true)} />
+            <LeadCaptureForm
+              assessmentText={quoteText}
+              photoUrls={allPhotoUrls}
+              onLeadCreated={() => setLeadCreated(true)}
+              company={company}
+            />
           </div>
         )}
 
-        {/* How it works — show while loading initial message */}
         {displayMessages.length === 0 && (
           <div className="grid grid-cols-3 gap-3 text-center">
             {[
@@ -331,10 +489,9 @@ export default function PublicEstimate() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="pb-6 text-center text-green-400/60 text-xs space-y-1">
-        <p>© {new Date().getFullYear()} Licensed & Insured Tree Service</p>
-        <p>This is a preliminary AI estimate. A certified arborist will provide your final quote on-site.</p>
+      <footer className="pb-6 text-center text-green-400/60 text-xs space-y-1 px-4">
+        <p>© {new Date().getFullYear()} {companyName} · Licensed & Insured</p>
+        <p className="max-w-md mx-auto">{disclaimer}</p>
         <p className="mt-2 text-green-400/40 flex items-center justify-center gap-1">
           <TreePine className="w-3 h-3" /> Powered by TreePro AI
         </p>

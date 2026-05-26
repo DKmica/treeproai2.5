@@ -1,0 +1,53 @@
+{
+  "name": "SafetyChecklist",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string"
+    },
+    "completed_by": {
+      "type": "string"
+    },
+    "ppe_confirmed": {
+      "type": "boolean",
+      "default": false
+    },
+    "power_lines_checked": {
+      "type": "boolean",
+      "default": false
+    },
+    "drop_zone_confirmed": {
+      "type": "boolean",
+      "default": false
+    },
+    "traffic_control_needed": {
+      "type": "boolean",
+      "default": false
+    },
+    "customer_property_protected": {
+      "type": "boolean",
+      "default": false
+    },
+    "hazards_found": {
+      "type": "boolean",
+      "default": false
+    },
+    "hazard_description": {
+      "type": "string"
+    },
+    "safe_to_proceed": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "job_id"
+  ]
+}

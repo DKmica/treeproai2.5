@@ -11,14 +11,31 @@
     "customer_name": {
       "type": "string"
     },
+    "customer_email": {
+      "type": "string"
+    },
+    "customer_phone": {
+      "type": "string"
+    },
+    "ai_analysis_id": {
+      "type": "string"
+    },
+    "lead_id": {
+      "type": "string"
+    },
     "status": {
       "type": "string",
       "enum": [
         "draft",
+        "needs_review",
         "sent",
-        "accepted",
+        "viewed",
+        "approved",
         "rejected",
-        "expired"
+        "expired",
+        "converted_to_job",
+        "invoiced",
+        "paid"
       ],
       "default": "draft"
     },
@@ -42,6 +59,21 @@
         }
       }
     },
+    "subtotal": {
+      "type": "number"
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "tax_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "tax_amount": {
+      "type": "number",
+      "default": 0
+    },
     "total_amount": {
       "type": "number"
     },
@@ -52,12 +84,33 @@
     "ai_analysis": {
       "type": "string"
     },
+    "scope_of_work": {
+      "type": "string"
+    },
     "notes": {
+      "type": "string"
+    },
+    "internal_notes": {
       "type": "string"
     },
     "valid_until": {
       "type": "string",
       "format": "date"
+    },
+    "sent_at": {
+      "type": "string"
+    },
+    "approved_at": {
+      "type": "string"
+    },
+    "rejected_at": {
+      "type": "string"
+    },
+    "approval_token": {
+      "type": "string"
+    },
+    "change_reason": {
+      "type": "string"
     }
   },
   "required": [

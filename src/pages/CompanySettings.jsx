@@ -6,13 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, DollarSign, Globe, Shield, Settings, Loader2, CheckCircle2, AlertCircle, Save } from "lucide-react";
+import { Building2, DollarSign, Globe, Shield, Loader2, CheckCircle2, AlertCircle, Save } from "lucide-react";
 import { toast } from "sonner";
 
 const DEFAULT_SETTINGS = {
   company_name: "",
+  logo_url: "",
+  primary_color: "#16a34a",
   phone: "",
   email: "",
   website: "",
@@ -42,7 +45,9 @@ const DEFAULT_SETTINGS = {
   terms_and_conditions: "",
   customer_portal_enabled: false,
   public_widget_enabled: true,
-};
+  max_upload_photos: 10,
+  max_photo_size_mb: 10,
+  };
 
 function FieldGroup({ label, children }) {
   return (
@@ -155,6 +160,10 @@ export default function CompanySettingsPage() {
             <CardContent className="space-y-4">
               <FieldGroup label="Company Name *">
                 <Input value={form.company_name} onChange={set("company_name")} placeholder="Your Tree Service Company" />
+              </FieldGroup>
+              <FieldGroup label="Logo URL">
+                <Input value={form.logo_url} onChange={set("logo_url")} placeholder="https://yourcompany.com/logo.png" />
+                {form.logo_url && <img src={form.logo_url} alt="Logo preview" className="mt-2 h-12 object-contain rounded border" />}
               </FieldGroup>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FieldGroup label="Phone">
@@ -306,11 +315,19 @@ export default function CompanySettingsPage() {
                 </Button>
               </div>
               <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-2">Embed Code</p>
-                <p className="text-xs text-muted-foreground mb-2">Share this URL or embed it in your website:</p>
-                <code className="block text-xs bg-card border rounded p-2 break-all">
+                <p className="text-sm font-medium mb-2">Public Estimate URL</p>
+                <p className="text-xs text-muted-foreground mb-2">Share this link or embed it on your website:</p>
+                <code className="block text-xs bg-card border rounded p-2 break-all select-all">
                   {window.location.origin}/estimate
                 </code>
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <FieldGroup label="Max Upload Photos">
+                  <Input type="number" value={form.max_upload_photos || 10} onChange={setNum("max_upload_photos")} />
+                </FieldGroup>
+                <FieldGroup label="Max Photo Size (MB)">
+                  <Input type="number" value={form.max_photo_size_mb || 10} onChange={setNum("max_photo_size_mb")} />
+                </FieldGroup>
               </div>
             </CardContent>
           </Card>

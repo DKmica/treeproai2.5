@@ -7,19 +7,27 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, MapPin, Calendar, Users, DollarSign } from "lucide-react";
+import { Plus, Search, MoreVertical, MapPin, Calendar, Users, DollarSign, Receipt } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import JobForm from "@/components/jobs/JobForm";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 const statusColors = {
+  unscheduled: "bg-gray-100 text-gray-600",
   scheduled: "bg-blue-100 text-blue-700",
+  dispatched: "bg-purple-100 text-purple-700",
   in_progress: "bg-yellow-100 text-yellow-700",
+  paused: "bg-orange-100 text-orange-700",
   completed: "bg-green-100 text-green-700",
+  needs_follow_up: "bg-pink-100 text-pink-700",
+  invoiced: "bg-teal-100 text-teal-700",
+  paid: "bg-emerald-100 text-emerald-700",
   cancelled: "bg-red-100 text-red-700",
 };
 
 export default function Jobs() {
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
@@ -90,8 +98,30 @@ export default function Jobs() {
                   <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setEditing(j)}>Edit</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "in_progress" } })}>Start Job</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "completed", completion_date: new Date().toISOString().split("T")[0] } })}>Complete</DropdownMenuItem>
+                    {j.status === "scheduled" && <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "in_progress" } })}>Start Job</DropdownMenuItem>}
+                    {j.status === "in_progress" && <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "completed", completion_date: new Date().toISOString().split("T")[0] } })}>Complete Job</DropdownMenuItem>}
+                    {j.status === "completed" && (
+                      <DropdownMenuItem onClick={async () => {
+                        const inv = await base44.entities.Invoice.create({
+                          customer_id: j.customer_id,
+                          customer_name: j.customer_name,
+                          job_id: j.id,
+                          quote_id: j.quote_id || "",
+                          invoice_number: `INV-${Date.now().toString().slice(-6)}`,
+                          line_items: j.line_items || [{ description: j.description, quantity: 1, unit_price: j.total_cost || 0, total: j.total_cost || 0 }],
+                          subtotal: j.total_cost || 0,
+                          total: j.total_cost || 0,
+                          balance_due: j.total_cost || 0,
+                          status: "draft",
+                          due_date: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+                        });
+                        updateMutation.mutate({ id: j.id, data: { status: "invoiced", invoice_id: inv.id } });
+                        toast.success("Invoice created");
+                        navigate("/invoices");
+                      }}>
+                        <Receipt className="w-4 h-4 mr-2" />Generate Invoice
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(j.id)}>Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
