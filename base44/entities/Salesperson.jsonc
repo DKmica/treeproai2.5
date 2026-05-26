@@ -1,0 +1,53 @@
+{
+  "name": "Salesperson",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "territory": {
+      "type": "string",
+      "description": "Geographic area or specialty"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "specialties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "e.g. emergency, residential, commercial"
+    },
+    "max_leads": {
+      "type": "number",
+      "default": 10,
+      "description": "Max concurrent leads this person can handle"
+    },
+    "current_lead_count": {
+      "type": "number",
+      "default": 0
+    },
+    "total_won": {
+      "type": "number",
+      "default": 0
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

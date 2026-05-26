@@ -31,6 +31,7 @@
         "social_media",
         "door_to_door",
         "phone",
+        "form",
         "other"
       ],
       "description": "How the lead found us"
@@ -69,6 +70,33 @@
     "ai_notes": {
       "type": "string",
       "description": "AI analysis notes"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "Salesperson name assigned to this lead"
+    },
+    "assigned_to_id": {
+      "type": "string",
+      "description": "Salesperson ID assigned to this lead"
+    },
+    "follow_up_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Scheduled follow-up date"
+    },
+    "follow_up_notes": {
+      "type": "string",
+      "description": "Notes for the follow-up call or visit"
+    },
+    "contact_attempts": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of contact attempts made"
+    },
+    "last_contact_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of last contact attempt"
     }
   },
   "required": [
