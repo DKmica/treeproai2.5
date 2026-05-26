@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Search, MoreVertical, Sparkles, FileText, Loader2 } from "lucide-react";
 import QuoteForm from "@/components/quotes/QuoteForm";
+import GenerateFromAssessmentModal from "@/components/quotes/GenerateFromAssessmentModal";
 import { toast } from "sonner";
 
 const statusColors = {
@@ -24,6 +26,17 @@ export default function Quotes() {
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [prefillAssessmentText, setPrefillAssessmentText] = useState("");
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.autoOpenAssessment && location.state?.assessmentText) {
+      setPrefillAssessmentText(location.state.assessmentText);
+      setShowAssessmentModal(true);
+      window.history.replaceState({}, ""); // clear state
+    }
+  }, [location.state]);
   const queryClient = useQueryClient();
 
   const { data: quotes = [], isLoading } = useQuery({ queryKey: ["quotes"], queryFn: () => base44.entities.Quote.list("-created_date") });
@@ -86,6 +99,9 @@ Include common tree services like trimming, removal, stump grinding. Generate re
           <p className="text-sm text-muted-foreground mt-1">{quotes.length} total quotes</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => setShowAssessmentModal(true)}>
+            <Sparkles className="w-4 h-4 text-primary" /> From AI Assessment
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-2" disabled={generating || customers.length === 0}>
@@ -143,6 +159,13 @@ Include common tree services like trimming, removal, stump grinding. Generate re
 
       <QuoteForm open={showForm} onOpenChange={setShowForm} customers={customers} onSubmit={(d) => createMutation.mutate(d)} />
       {editing && <QuoteForm open={!!editing} onOpenChange={() => setEditing(null)} customers={customers} initialData={editing} onSubmit={(d) => updateMutation.mutate({ id: editing.id, data: d })} />}
+      <GenerateFromAssessmentModal
+        open={showAssessmentModal}
+        onOpenChange={(v) => { setShowAssessmentModal(v); if (!v) setPrefillAssessmentText(""); }}
+        customers={customers}
+        prefillText={prefillAssessmentText}
+        onQuoteCreated={() => queryClient.invalidateQueries({ queryKey: ["quotes"] })}
+      />
     </div>
   );
 }

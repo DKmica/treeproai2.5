@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { TreePine, Send, Upload, X, Loader2, Plus, Bot, User } from "lucide-react";
+import { TreePine, Send, Upload, X, Loader2, Plus, Bot, User, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
@@ -83,6 +84,7 @@ function TypingIndicator() {
 export default function TreeAssessment() {
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [quoteText, setQuoteText] = useState("");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -115,6 +117,12 @@ export default function TreeAssessment() {
       const lastMsg = data.messages[data.messages.length - 1];
       if (lastMsg?.role === "assistant" && lastMsg?.content) {
         setIsTyping(false);
+        // Build combined text for quote generation
+        const fullText = data.messages
+          .filter((m) => m.content)
+          .map((m) => `${m.role === "user" ? "Customer" : "AI Arborist"}: ${m.content}`)
+          .join("\n\n");
+        setQuoteText(fullText);
       }
     });
 
@@ -205,6 +213,18 @@ export default function TreeAssessment() {
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
             AI Online
           </Badge>
+          {quoteText && (
+            <Link
+              to="/quotes"
+              state={{ autoOpenAssessment: true, assessmentText: quoteText }}
+              className="inline-flex"
+            >
+              <Button size="sm" className="gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                Generate Quote
+              </Button>
+            </Link>
+          )}
           <Button variant="outline" size="sm" onClick={resetConversation} className="gap-1.5">
             <Plus className="w-3.5 h-3.5" />
             New Session
