@@ -41,7 +41,13 @@ export default function Quotes() {
     if (location.state?.autoOpenAssessment && location.state?.assessmentText) {
       setPrefillAssessmentText(location.state.assessmentText);
       setShowAssessmentModal(true);
-      window.history.replaceState({}, ""); // clear state
+      window.history.replaceState({}, "");
+    }
+    // Auto-open form when coming from leads with ?new=1
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("new") === "1") {
+      setShowForm(true);
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, [location.state]);
   const queryClient = useQueryClient();

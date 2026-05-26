@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, Sparkles, Phone, Mail, MapPin } from "lucide-react";
+import { Plus, Search, MoreVertical, Sparkles, Phone, Mail, MapPin, UserCheck, FileText } from "lucide-react";
 import LeadForm from "@/components/leads/LeadForm";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const statusColors = {
   new: "bg-blue-100 text-blue-700",
@@ -28,6 +29,7 @@ const urgencyColors = {
 };
 
 export default function Leads() {
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [search, setSearch] = useState("");
@@ -53,6 +55,27 @@ export default function Leads() {
     mutationFn: (id) => base44.entities.Lead.delete(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["leads"] }); toast.success("Lead deleted"); },
   });
+
+  const convertToCustomer = async (lead) => {
+    const existing = await base44.entities.Customer.filter({ lead_id: lead.id });
+    if (existing.length > 0) {
+      toast.info("Customer already exists for this lead");
+      navigate("/customers");
+      return;
+    }
+    await base44.entities.Customer.create({
+      first_name: lead.first_name,
+      last_name: lead.last_name,
+      email: lead.email || "",
+      phone: lead.phone || "",
+      address: lead.address || "",
+      notes: lead.description || "",
+      lead_id: lead.id,
+    });
+    updateMutation.mutate({ id: lead.id, data: { status: "won" } });
+    toast.success("Customer created!");
+    navigate("/customers");
+  };
 
   const aiScoreMutation = useMutation({
     mutationFn: async (lead) => {
@@ -140,10 +163,16 @@ Address: ${lead.address || "Not provided"}`,
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setEditingLead(lead)}>Edit</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => aiScoreMutation.mutate(lead)} disabled={scoringId === lead.id}>
-                      {scoringId === lead.id ? "Scoring..." : "AI Score"}
+                      <Sparkles className="w-4 h-4 mr-2" />{scoringId === lead.id ? "Scoring..." : "AI Score"}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => updateMutation.mutate({ id: lead.id, data: { status: "contacted" } })}>Mark Contacted</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => updateMutation.mutate({ id: lead.id, data: { status: "qualified" } })}>Mark Qualified</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => convertToCustomer(lead)} className="gap-2">
+                      <UserCheck className="w-4 h-4" />Convert to Customer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(`/quotes?new=1&customer_name=${encodeURIComponent(lead.first_name + ' ' + lead.last_name)}&lead_id=${lead.id}`)} className="gap-2">
+                      <FileText className="w-4 h-4" />Create Quote
+                    </DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(lead.id)}>Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

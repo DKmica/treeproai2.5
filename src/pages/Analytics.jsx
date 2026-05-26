@@ -15,8 +15,8 @@ export default function Analytics() {
 
   const completedJobs = jobs.filter((j) => j.status === "completed");
   const totalRevenue = completedJobs.reduce((s, j) => s + (j.total_cost || 0), 0);
-  const acceptedQuotes = quotes.filter((q) => q.status === "accepted").length;
-  const conversionRate = quotes.length > 0 ? Math.round((acceptedQuotes / quotes.length) * 100) : 0;
+  const approvedQuotes = quotes.filter((q) => q.status === "approved" || q.status === "converted_to_job" || q.status === "invoiced" || q.status === "paid").length;
+  const conversionRate = quotes.length > 0 ? Math.round((approvedQuotes / quotes.length) * 100) : 0;
 
   const leadsBySource = leads.reduce((acc, l) => { acc[l.source || "other"] = (acc[l.source || "other"] || 0) + 1; return acc; }, {});
   const sourceData = Object.entries(leadsBySource).map(([name, value]) => ({ name: name.replace(/_/g, " "), value }));
