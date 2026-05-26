@@ -1,0 +1,78 @@
+{
+  "name": "Lead",
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string",
+      "description": "Lead's first name"
+    },
+    "last_name": {
+      "type": "string",
+      "description": "Lead's last name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Contact email"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "address": {
+      "type": "string",
+      "description": "Property address"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "website",
+        "referral",
+        "google",
+        "social_media",
+        "door_to_door",
+        "phone",
+        "other"
+      ],
+      "description": "How the lead found us"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "contacted",
+        "qualified",
+        "quoted",
+        "won",
+        "lost"
+      ],
+      "default": "new",
+      "description": "Current lead status"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the service needed"
+    },
+    "urgency": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "emergency"
+      ],
+      "default": "normal"
+    },
+    "ai_score": {
+      "type": "number",
+      "description": "AI-generated lead score 0-100"
+    },
+    "ai_notes": {
+      "type": "string",
+      "description": "AI analysis notes"
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name"
+  ]
+}

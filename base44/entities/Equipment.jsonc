@@ -1,0 +1,60 @@
+{
+  "name": "Equipment",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "chainsaw",
+        "chipper",
+        "stump_grinder",
+        "bucket_truck",
+        "crane",
+        "climbing_gear",
+        "other"
+      ]
+    },
+    "serial_number": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "operational",
+        "maintenance",
+        "repair",
+        "retired"
+      ],
+      "default": "operational"
+    },
+    "assigned_crew": {
+      "type": "string"
+    },
+    "purchase_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "last_maintenance": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_maintenance": {
+      "type": "string",
+      "format": "date"
+    },
+    "hours_used": {
+      "type": "number",
+      "default": 0
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "type"
+  ]
+}

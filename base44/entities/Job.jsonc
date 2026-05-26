@@ -1,0 +1,59 @@
+{
+  "name": "Job",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "quote_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled"
+    },
+    "description": {
+      "type": "string"
+    },
+    "scheduled_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "address": {
+      "type": "string"
+    },
+    "crew_id": {
+      "type": "string"
+    },
+    "crew_name": {
+      "type": "string"
+    },
+    "total_cost": {
+      "type": "number"
+    },
+    "satisfaction_rating": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "completion_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "customer_id",
+    "customer_name",
+    "description"
+  ]
+}

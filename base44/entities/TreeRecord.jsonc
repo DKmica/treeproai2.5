@@ -1,0 +1,63 @@
+{
+  "name": "TreeRecord",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string",
+      "description": "Property address where tree is located"
+    },
+    "species": {
+      "type": "string"
+    },
+    "common_name": {
+      "type": "string"
+    },
+    "height_ft": {
+      "type": "number"
+    },
+    "diameter_in": {
+      "type": "number",
+      "description": "Diameter at breast height in inches"
+    },
+    "condition": {
+      "type": "string",
+      "enum": [
+        "excellent",
+        "good",
+        "fair",
+        "poor",
+        "dead"
+      ],
+      "default": "good"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high",
+        "extreme"
+      ],
+      "default": "low"
+    },
+    "photo_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ai_analysis": {
+      "type": "string",
+      "description": "JSON string of AI analysis results"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_id"
+  ]
+}
