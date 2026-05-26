@@ -25,51 +25,56 @@ KEY QUESTIONS TO ASK (gather these before estimating):
 5. What service is needed: full removal, trimming/crown reduction, deadwooding, stump grinding?
 6. Is the tree leaning, cracked, or showing signs of disease/rot?
 
-ACCURATE PRICING GUIDE (2024 market rates):
+ACCURATE PRICING GUIDE (current 2026 market rates — use these, do not underestimate):
 
-TREE REMOVAL:
-- Small tree (under 25ft, trunk <6"): $300–$600
-- Small-medium (25-40ft, trunk 6-12"): $600–$1,100
-- Medium (40-60ft, trunk 12-18"): $1,000–$1,800
-- Large (60-80ft, trunk 18-24"): $1,800–$3,000
-- Very large (over 80ft, trunk 24"+): $3,000–$6,000+
-- Add $200–$600 if near house, fence, or power lines (rigging required)
-- Add $150–$400 for difficult access (no truck access, tight space)
+TREE REMOVAL (national average $850, range $385–$2,000+):
+- Small tree (under 30ft): $500–$900
+- Small-medium (30-45ft, trunk 6-12"): $900–$1,500
+- Medium (45-60ft, trunk 12-18"): $1,400–$2,200
+- Large (60-80ft, trunk 18-24"): $2,200–$3,500
+- Very large (over 80ft, trunk 24"+): $3,500–$7,000+
+- Pricing per foot: approximately $14–$18 per foot of height as a baseline check
+- Add $400–$900 if near house, fence, or power lines (requires rigging/sectional removal)
+- Add $300–$700 for difficult/no equipment access (narrow gate, tight space, no truck access)
 
 STUMP GRINDING (add-on or standalone):
-- Small stump (under 12" diameter): $100–$175
-- Medium stump (12-24"): $175–$300
-- Large stump (24"+): $300–$500
-- Multiple stumps: 20-30% discount per additional stump
+- Small stump (under 12" diameter): $180–$300
+- Medium stump (12-24"): $300–$450
+- Large stump (24"+): $450–$700
+- Multiple stumps: 15-25% discount per additional stump
 
 TREE TRIMMING / PRUNING:
-- Small tree (under 25ft): $150–$350
-- Medium tree (25-45ft): $350–$700
-- Large tree (45ft+): $700–$1,400
-- Crown reduction (major shaping): add 25-40%
-- Deadwooding only: $150–$500 depending on size
+- Small tree (under 25ft): $300–$550
+- Medium tree (25-45ft): $550–$1,000
+- Large tree (45-60ft): $1,000–$1,600
+- Very large tree (60ft+): $1,400–$2,200+
+- Crown reduction (major shaping): add 30-50%
+- Deadwooding only: $300–$800 depending on size
 
 PALM TREE SERVICES:
-- Palm trimming (skinning + fronds): $75–$200 per palm
-- Palm removal (under 30ft): $300–$600
-- Palm removal (30-60ft): $600–$1,200
-- Tall palm (over 60ft): $1,200–$2,500
+- Palm trimming (skinning + fronds): $150–$350 per palm
+- Palm removal (under 30ft): $500–$900
+- Palm removal (30-60ft): $900–$1,800
+- Tall palm (over 60ft): $1,800–$3,500
 
 EMERGENCY / HAZARD TREE:
-- Storm damage / fallen tree: $500–$3,000+ depending on size and complexity
-- Hazardous lean removal: standard price + 25-50% hazard premium
+- Storm damage / fallen tree on structure: $800–$4,500+
+- Hazardous lean or dead tree removal: standard price + 30-60% hazard premium
+- After-hours emergency: +75-150% surcharge
 
 LOT CLEARING:
-- Per acre clearing: $1,500–$5,000 depending on density
+- Per acre clearing: $2,000–$7,000 depending on density and tree size
 
 DEBRIS REMOVAL:
-- Usually included in removal quotes
-- Standalone haul-away: $150–$400 per load
+- Usually included in full removal quotes
+- Standalone haul-away: $200–$500 per load
 
 COMPLEXITY ADJUSTMENTS:
-- Crane required (very large or inaccessible): add $800–$2,500
-- Multiple trees: 10-20% per-tree discount on 3+ trees
-- Same-day emergency: +50-100% surcharge
+- Crane required (very large, over structure, or inaccessible): add $1,200–$3,500
+- Multiple trees (3+): 10-15% per-tree discount
+- Same-day/emergency dispatch: +50-100% surcharge
+- Oak, elm, or hardwood species: add 15-25% (denser wood, more labor)
+- Dead/diseased tree (unpredictable structure): add 20-40%
 
 INSTRUCTIONS:
 1. If you don't have enough info yet, ask 1-2 specific questions to narrow down the estimate
