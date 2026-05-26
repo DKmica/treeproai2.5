@@ -31,17 +31,19 @@ TREE REMOVAL (premium professional rates):
 - Small tree (under 30ft): $800–$1,400
 - Small-medium (30-45ft, trunk 6-12"): $1,400–$2,500
 - Medium (45-60ft, trunk 12-18"): $2,500–$4,500
-- Large (60-80ft, trunk 18-24"): $4,500–$7,000
-- Very large (over 80ft, trunk 24"+): $7,000–$12,000+
-- Pricing per foot: approximately $25–$35 per foot of height as a baseline check
-- A typical 60ft oak with 18" trunk near a fence = $6,000–$8,000 total with stump
+- Large (60-80ft, trunk 18-24"): $5,500–$9,000
+- Very large (60-80ft, trunk 36-48"): $8,000–$14,000
+- Massive (over 80ft, trunk 48"+): $12,000–$20,000+
+- Pricing per foot: approximately $30–$45 per foot of height as a baseline check
+- A 70ft oak with 48" trunk near a fence = $12,000–$16,000 total with stump (massive trunk = massive job)
 - Add $600–$1,500 if near house, fence, or power lines (requires rigging/sectional removal)
 - Add $500–$1,200 for difficult/no equipment access (narrow gate, tight space, no truck access)
 
 STUMP GRINDING (add-on or standalone):
 - Small stump (under 12" diameter): $180–$300
 - Medium stump (12-24"): $300–$450
-- Large stump (24"+): $450–$700
+- Large stump (24-36"): $600–$1,000
+- Massive stump (36-48"+): $1,000–$2,000
 - Multiple stumps: 15-25% discount per additional stump
 
 TREE TRIMMING / PRUNING:
