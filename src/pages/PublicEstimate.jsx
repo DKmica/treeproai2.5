@@ -258,7 +258,7 @@ export default function PublicEstimate() {
           <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center border border-white/20">
             <TreePine className="w-5 h-5 text-green-300" />
           </div>
-          <span className="text-white font-bold text-xl tracking-tight">TreePro AI</span>
+          <span className="text-white font-bold text-xl tracking-tight">Accurate Tree and Landscaping Services</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight max-w-xl mx-auto">
           Get a Free Tree Service Estimate in Minutes
@@ -269,7 +269,7 @@ export default function PublicEstimate() {
         {/* Trust badges */}
         <div className="flex flex-wrap justify-center gap-4 mt-4 text-xs text-green-300">
           <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5" /> Licensed & Insured</span>
-          <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-green-400 text-green-400" /> 4.9★ Rating</span>
+          <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-green-400 text-green-400" /> 5★ Rating</span>
           <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Free On-Site Visit</span>
           <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> No Obligation</span>
         </div>
@@ -391,8 +391,11 @@ export default function PublicEstimate() {
 
       {/* ── Footer ───────────────────────────────────────── */}
       <footer className="pb-6 text-center text-green-400/60 text-xs space-y-1">
-        <p>© 2025 TreePro AI · Licensed & Insured Tree Service</p>
+        <p>© 2025 Accurate Tree and Landscaping Services · Licensed & Insured</p>
         <p>This is a preliminary AI estimate. A certified arborist will provide your final quote on-site.</p>
+        <p className="mt-2 text-green-400/40 flex items-center justify-center gap-1">
+          <TreePine className="w-3 h-3" /> Powered by TreePro AI
+        </p>
       </footer>
     </div>
   );
