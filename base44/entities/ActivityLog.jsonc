@@ -1,0 +1,24 @@
+{
+  "name": "ActivityLog",
+  "type": "object",
+  "properties": {
+    "related_type": {
+      "type": "string"
+    },
+    "related_id": {
+      "type": "string"
+    },
+    "actor": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "action"
+  ]
+}

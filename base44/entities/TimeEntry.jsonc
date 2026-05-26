@@ -1,0 +1,40 @@
+{
+  "name": "TimeEntry",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string"
+    },
+    "job_id": {
+      "type": "string"
+    },
+    "clock_in": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "clock_out": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "break_minutes": {
+      "type": "number",
+      "default": 0
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "clocked_in",
+        "on_break",
+        "clocked_out"
+      ],
+      "default": "clocked_in"
+    }
+  },
+  "required": [
+    "employee_id",
+    "job_id"
+  ]
+}

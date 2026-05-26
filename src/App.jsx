@@ -18,6 +18,12 @@ import TreeAssessment from '@/pages/TreeAssessment';
 import Sales from '@/pages/Sales';
 import PublicEstimate from '@/pages/PublicEstimate';
 import Employees from '@/pages/Employees';
+import CompanySettings from '@/pages/CompanySettings';
+import Invoices from '@/pages/Invoices';
+import CrewMode from '@/pages/CrewMode';
+import AIAnalysis from '@/pages/AIAnalysis';
+import ProductionReadiness from '@/pages/ProductionReadiness';
+import Notifications from '@/pages/Notifications';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -52,6 +58,12 @@ const AuthenticatedApp = () => {
         <Route path="/tree-assessment" element={<TreeAssessment />} />
         <Route path="/employees" element={<Employees />} />
         <Route path="/sales" element={<Sales />} />
+        <Route path="/settings" element={<CompanySettings />} />
+        <Route path="/invoices" element={<Invoices />} />
+        <Route path="/crew-mode" element={<CrewMode />} />
+        <Route path="/ai-analysis" element={<AIAnalysis />} />
+        <Route path="/production-readiness" element={<ProductionReadiness />} />
+        <Route path="/notifications" element={<Notifications />} />
       </Route>
       <Route path="/estimate" element={<PublicEstimate />} />
       <Route path="*" element={<PageNotFound />} />

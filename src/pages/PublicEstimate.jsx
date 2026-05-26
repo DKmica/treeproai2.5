@@ -215,7 +215,7 @@ export default function PublicEstimate() {
           <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center border border-white/20">
             <TreePine className="w-5 h-5 text-green-300" />
           </div>
-          <span className="text-white font-bold text-xl tracking-tight">Accurate Tree and Landscaping Services</span>
+          <span className="text-white font-bold text-xl tracking-tight">Tree Service Estimator</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight max-w-xl mx-auto">
           Get a Free Tree Service Estimate in Minutes
@@ -333,7 +333,7 @@ export default function PublicEstimate() {
 
       {/* Footer */}
       <footer className="pb-6 text-center text-green-400/60 text-xs space-y-1">
-        <p>© 2025 Accurate Tree and Landscaping Services · Licensed & Insured</p>
+        <p>© {new Date().getFullYear()} Licensed & Insured Tree Service</p>
         <p>This is a preliminary AI estimate. A certified arborist will provide your final quote on-site.</p>
         <p className="mt-2 text-green-400/40 flex items-center justify-center gap-1">
           <TreePine className="w-3 h-3" /> Powered by TreePro AI

@@ -1,0 +1,34 @@
+{
+  "name": "JobPhoto",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string"
+    },
+    "uploaded_by": {
+      "type": "string"
+    },
+    "photo_url": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "before",
+        "during",
+        "after",
+        "damage",
+        "hazard",
+        "equipment"
+      ],
+      "default": "before"
+    },
+    "caption": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "job_id",
+    "photo_url"
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "name": "AIAnalysisRecord",
+  "type": "object",
+  "properties": {
+    "customer_id": {
+      "type": "string"
+    },
+    "lead_id": {
+      "type": "string"
+    },
+    "quote_id": {
+      "type": "string"
+    },
+    "job_id": {
+      "type": "string"
+    },
+    "image_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "original_customer_notes": {
+      "type": "string"
+    },
+    "detected_species": {
+      "type": "string"
+    },
+    "species_confidence": {
+      "type": "number"
+    },
+    "estimated_height_ft_low": {
+      "type": "number"
+    },
+    "estimated_height_ft_high": {
+      "type": "number"
+    },
+    "estimated_dbh_inches_low": {
+      "type": "number"
+    },
+    "estimated_dbh_inches_high": {
+      "type": "number"
+    },
+    "canopy_spread_ft": {
+      "type": "number"
+    },
+    "condition_summary": {
+      "type": "string"
+    },
+    "hazards_detected": {
+      "type": "string"
+    },
+    "access_difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "moderate",
+        "difficult",
+        "very_difficult"
+      ]
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high",
+        "extreme"
+      ]
+    },
+    "urgency_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "emergency"
+      ]
+    },
+    "crane_likely": {
+      "type": "boolean",
+      "default": false
+    },
+    "bucket_truck_likely": {
+      "type": "boolean",
+      "default": false
+    },
+    "climbing_required": {
+      "type": "boolean",
+      "default": false
+    },
+    "stump_grinding_likely": {
+      "type": "boolean",
+      "default": false
+    },
+    "cleanup_volume_estimate": {
+      "type": "string"
+    },
+    "recommended_service": {
+      "type": "string"
+    },
+    "price_low": {
+      "type": "number"
+    },
+    "price_high": {
+      "type": "number"
+    },
+    "confidence_score": {
+      "type": "number"
+    },
+    "missing_info_questions": {
+      "type": "string"
+    },
+    "ai_reasoning_summary": {
+      "type": "string"
+    },
+    "human_review_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "reviewed",
+        "corrected",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "human_final_price": {
+      "type": "number"
+    },
+    "human_corrections": {
+      "type": "string"
+    },
+    "reviewed_by": {
+      "type": "string"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": []
+}

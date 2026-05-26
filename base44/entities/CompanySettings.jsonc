@@ -1,0 +1,121 @@
+{
+  "name": "CompanySettings",
+  "type": "object",
+  "properties": {
+    "company_name": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "website": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "zip": {
+      "type": "string"
+    },
+    "service_area_description": {
+      "type": "string"
+    },
+    "default_timezone": {
+      "type": "string",
+      "default": "America/Chicago"
+    },
+    "default_currency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "minimum_job_price": {
+      "type": "number",
+      "default": 150
+    },
+    "default_labor_rate_per_hour": {
+      "type": "number",
+      "default": 75
+    },
+    "crew_hourly_rate": {
+      "type": "number",
+      "default": 65
+    },
+    "estimator_hourly_rate": {
+      "type": "number",
+      "default": 85
+    },
+    "emergency_markup_percent": {
+      "type": "number",
+      "default": 40
+    },
+    "risk_markup_percent": {
+      "type": "number",
+      "default": 20
+    },
+    "profit_margin_percent": {
+      "type": "number",
+      "default": 35
+    },
+    "travel_fee_base": {
+      "type": "number",
+      "default": 0
+    },
+    "travel_fee_per_mile": {
+      "type": "number",
+      "default": 0
+    },
+    "stump_grinding_base_price": {
+      "type": "number",
+      "default": 100
+    },
+    "stump_grinding_per_inch": {
+      "type": "number",
+      "default": 4
+    },
+    "crane_day_rate": {
+      "type": "number",
+      "default": 1500
+    },
+    "dump_fee_base": {
+      "type": "number",
+      "default": 75
+    },
+    "disposal_fee_per_cubic_yard": {
+      "type": "number",
+      "default": 25
+    },
+    "quote_expiration_days": {
+      "type": "number",
+      "default": 30
+    },
+    "public_estimate_disclaimer": {
+      "type": "string"
+    },
+    "terms_and_conditions": {
+      "type": "string"
+    },
+    "customer_portal_enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "public_widget_enabled": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "company_name"
+  ]
+}
