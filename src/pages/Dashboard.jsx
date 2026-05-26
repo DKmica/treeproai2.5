@@ -5,6 +5,7 @@ import StatCard from "@/components/dashboard/StatCard";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import JobStatusChart from "@/components/dashboard/JobStatusChart";
+import JobsCalendar from "@/components/dashboard/JobsCalendar";
 
 export default function Dashboard() {
   const { data: leads = [] } = useQuery({ queryKey: ["leads"], queryFn: () => base44.entities.Lead.list() });
@@ -37,7 +38,10 @@ export default function Dashboard() {
         <JobStatusChart />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <JobsCalendar />
+        </div>
         <RecentActivity />
       </div>
     </div>
