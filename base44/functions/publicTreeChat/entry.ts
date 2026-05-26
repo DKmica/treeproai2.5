@@ -6,8 +6,14 @@ Deno.serve(async (req) => {
     const { messages, image_urls } = await req.json();
 
     // Load company settings for dynamic branding and pricing
-    const settingsArr = await base44.asServiceRole.entities.CompanySettings.list();
-    const s = settingsArr[0] || {};
+    let s = {};
+    try {
+      const settingsArr = await base44.asServiceRole.entities.CompanySettings.list();
+      s = settingsArr[0] || {};
+    } catch (e) {
+      // If service role fails, provide defaults
+      console.error("Failed to load CompanySettings:", e.message);
+    }
 
     const companyName = s.company_name || "Professional Tree Service";
     const serviceArea = s.service_area_description || "our local service area";

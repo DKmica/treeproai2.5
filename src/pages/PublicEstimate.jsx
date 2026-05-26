@@ -250,8 +250,18 @@ export default function PublicEstimate() {
   const msgTimestamps = useRef([]);
 
   useEffect(() => {
-    base44.entities.CompanySettings.list().then(arr => { if (arr[0]) setCompany(arr[0]); });
-    sendToAI("Hello, I need help assessing my tree(s) and getting a free estimate.", [], []);
+    const loadSettings = async () => {
+      const arr = await base44.entities.CompanySettings.list();
+      if (arr[0]) {
+        setCompany(arr[0]);
+        const serviceArea = arr[0].service_area_description || "your area";
+        const initialMsg = `Hello, I need help assessing my tree(s) and getting a free estimate. We're located in ${serviceArea}.`;
+        sendToAI(initialMsg, [], []);
+      } else {
+        sendToAI("Hello, I need help assessing my tree(s) and getting a free estimate.", [], []);
+      }
+    };
+    loadSettings();
   }, []);
 
   useEffect(() => {
