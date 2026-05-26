@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Search, MoreVertical, MapPin, Calendar, Users, DollarSign, Receipt } from "lucide-react";
+import { logActivity, logAudit, createNotification } from "@/lib/treeproWorkflow";
 import { useNavigate } from "react-router-dom";
 import JobForm from "@/components/jobs/JobForm";
 import { toast } from "sonner";
@@ -102,22 +103,26 @@ export default function Jobs() {
                     {j.status === "in_progress" && <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "completed", completion_date: new Date().toISOString().split("T")[0] } })}>Complete Job</DropdownMenuItem>}
                     {j.status === "completed" && (
                       <DropdownMenuItem onClick={async () => {
-                        const inv = await base44.entities.Invoice.create({
-                          customer_id: j.customer_id,
-                          customer_name: j.customer_name,
-                          job_id: j.id,
-                          quote_id: j.quote_id || "",
-                          invoice_number: `INV-${Date.now().toString().slice(-6)}`,
-                          line_items: j.line_items || [{ description: j.description, quantity: 1, unit_price: j.total_cost || 0, total: j.total_cost || 0 }],
-                          subtotal: j.total_cost || 0,
-                          total: j.total_cost || 0,
-                          balance_due: j.total_cost || 0,
-                          status: "draft",
-                          due_date: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-                        });
-                        updateMutation.mutate({ id: j.id, data: { status: "invoiced", invoice_id: inv.id } });
-                        toast.success("Invoice created");
-                        navigate("/invoices");
+                       const invNum = `INV-${Date.now().toString().slice(-6)}`;
+                       const inv = await base44.entities.Invoice.create({
+                         customer_id: j.customer_id,
+                         customer_name: j.customer_name,
+                         job_id: j.id,
+                         quote_id: j.quote_id || "",
+                         invoice_number: invNum,
+                         line_items: j.line_items || [{ description: j.description, quantity: 1, unit_price: j.total_cost || 0, total: j.total_cost || 0 }],
+                         subtotal: j.total_cost || 0,
+                         total: j.total_cost || 0,
+                         balance_due: j.total_cost || 0,
+                         status: "draft",
+                         due_date: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+                       });
+                       updateMutation.mutate({ id: j.id, data: { status: "invoiced", invoice_id: inv.id } });
+                       await logActivity({ relatedType: "Invoice", relatedId: inv.id, actor: "staff", action: `Invoice ${invNum} created from job`, notes: j.customer_name });
+                       await logAudit({ actorName: "staff", action: "invoice_created_from_job", entityType: "Invoice", entityId: inv.id, newValue: { job_id: j.id, customer: j.customer_name, total: j.total_cost } });
+                       await createNotification({ type: "general", title: `Invoice ${invNum} created`, message: `${j.customer_name} — $${(j.total_cost || 0).toLocaleString()}`, relatedType: "Invoice", relatedId: inv.id });
+                       toast.success("Invoice created");
+                       navigate("/invoices");
                       }}>
                         <Receipt className="w-4 h-4 mr-2" />Generate Invoice
                       </DropdownMenuItem>

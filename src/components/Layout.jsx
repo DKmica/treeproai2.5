@@ -5,7 +5,8 @@ import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard, Users, TreePine, FileText, Briefcase,
   Wrench, BarChart3, Menu, X, ChevronRight, ScanSearch, TrendingUp,
-  HardHat, Settings, Receipt, Bell, CheckSquare, Building2, Shield, Plug
+  HardHat, Settings, Receipt, Bell, CheckSquare, Building2, Shield, Plug,
+  Palette, Globe, Key, Webhook as WebhookIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +53,12 @@ const navGroups = [
       { path: "/employees", label: "Team", icon: Users },
       { path: "/integrations", label: "Integrations", icon: Plug },
       { path: "/settings", label: "Company Settings", icon: Building2 },
-      { path: "/production-readiness", label: "Go-Live Checklist", icon: Shield },
+      { path: "/white-label", label: "White-Label", icon: Palette },
+      { path: "/widget-settings", label: "Public Widget", icon: Globe },
+      { path: "/api-keys", label: "API Keys", icon: Key },
+      { path: "/webhooks", label: "Webhooks", icon: WebhookIcon },
+      { path: "/audit-log", label: "Audit Log", icon: Shield },
+      { path: "/production-readiness", label: "Go-Live Checklist", icon: CheckSquare },
     ],
   },
 ];

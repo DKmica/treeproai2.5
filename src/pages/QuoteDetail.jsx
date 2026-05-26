@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { createPortalLink, logActivity, createNotification } from "@/lib/treeproWorkflow";
+import { createPortalLink, logActivity, logAudit, createNotification } from "@/lib/treeproWorkflow";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -165,6 +165,9 @@ export default function QuoteDetail() {
     updateMutation.mutate(data);
     if (status === "approved") {
       base44.entities.Notification.create({ type: "quote_approved", title: `Quote approved for ${quote.customer_name}`, message: `Quote #${quote.quote_number || id.slice(0, 8)} is ready to convert to a job.`, read: false });
+      logAudit({ actorName: "staff", action: "quote_approved_by_staff", entityType: "Quote", entityId: id, newValue: { status: "approved" } });
+    } else if (status === "rejected") {
+      logAudit({ actorName: "staff", action: "quote_rejected_by_staff", entityType: "Quote", entityId: id, newValue: { status: "rejected" } });
     }
   };
 
@@ -201,6 +204,7 @@ export default function QuoteDetail() {
       });
       await updateMutation.mutateAsync({ status: "converted_to_job" });
       await logActivity({ relatedType: "Job", relatedId: job.id, actor: "staff", action: `Job created from quote #${quote.quote_number || id.slice(0, 8)}`, notes: quote.customer_name });
+      await logAudit({ actorName: "staff", action: "quote_converted_to_job", entityType: "Job", entityId: job.id, newValue: { quote_id: id, customer: quote.customer_name, total: quote.total_amount } });
       await createNotification({ type: "job_assigned", title: `Job created for ${quote.customer_name}`, message: `Quote #${quote.quote_number || id.slice(0, 8)} converted. Job ready to schedule.`, relatedType: "Job", relatedId: job.id });
       toast.success("Job created successfully!");
       setShowConvertDialog(false);

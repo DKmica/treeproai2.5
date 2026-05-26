@@ -29,6 +29,11 @@ import CustomerPortal from '@/pages/CustomerPortal';
 import TreeInventory from '@/pages/TreeInventory';
 import EquipmentMaintenance from '@/pages/EquipmentMaintenance';
 import Integrations from '@/pages/Integrations';
+import AuditLogPage from '@/pages/AuditLog';
+import WhiteLabel from '@/pages/WhiteLabel';
+import WidgetSettings from '@/pages/WidgetSettings';
+import APIKeys from '@/pages/APIKeys';
+import Webhooks from '@/pages/Webhooks';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -73,6 +78,11 @@ const AuthenticatedApp = () => {
         <Route path="/tree-inventory" element={<TreeInventory />} />
         <Route path="/maintenance" element={<EquipmentMaintenance />} />
         <Route path="/integrations" element={<Integrations />} />
+        <Route path="/audit-log" element={<AuditLogPage />} />
+        <Route path="/white-label" element={<WhiteLabel />} />
+        <Route path="/widget-settings" element={<WidgetSettings />} />
+        <Route path="/api-keys" element={<APIKeys />} />
+        <Route path="/webhooks" element={<Webhooks />} />
       </Route>
       <Route path="/estimate" element={<PublicEstimate />} />
       <Route path="/portal/:token" element={<CustomerPortal />} />

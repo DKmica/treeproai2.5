@@ -15,6 +15,7 @@ import {
 import {
   FileText, Plus, Search, MoreVertical, DollarSign, AlertCircle, CheckCircle2, Loader2, Eye, CreditCard
 } from "lucide-react";
+import { logAudit } from "@/lib/treeproWorkflow";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -283,8 +284,23 @@ export default function Invoices() {
       if (inv.quote_id) {
         base44.entities.Quote.update(inv.quote_id, { status: "paid" }).catch(() => {});
       }
+      // Update customer lifetime revenue if customer_id is linked
+      if (inv.customer_id) {
+        base44.entities.Customer.filter({ id: inv.customer_id }).then(arr => {
+          if (arr[0]) {
+            const newRevenue = (arr[0].total_revenue || 0) + (inv.total || 0);
+            const newJobCount = (arr[0].jobs_count || 0) + 1;
+            base44.entities.Customer.update(inv.customer_id, { total_revenue: newRevenue, jobs_count: newJobCount }).catch(() => {});
+          }
+        }).catch(() => {});
+      }
       base44.entities.Notification.create({ type: "general", title: `Invoice ${inv.invoice_number} fully paid`, message: `${inv.customer_name} — $${(inv.total || 0).toLocaleString()}`, read: false });
       base44.entities.ActivityLog.create({ related_type: "Invoice", related_id: inv.id, actor: "staff", action: `Invoice ${inv.invoice_number} paid in full via ${method}`, notes: `$${amount.toLocaleString()}` });
+      logAudit({ actorName: "staff", action: "invoice_paid_in_full", entityType: "Invoice", entityId: inv.id, newValue: { amount_paid: newAmountPaid, status: "paid", method } });
+    } else {
+      // Partial payment audit
+      base44.entities.ActivityLog.create({ related_type: "Invoice", related_id: inv.id, actor: "staff", action: `Partial payment of $${amount.toLocaleString()} via ${method}`, notes: `Balance remaining: $${newBalance.toLocaleString()}` });
+      logAudit({ actorName: "staff", action: "partial_payment_recorded", entityType: "Invoice", entityId: inv.id, newValue: { amount, method, new_balance: newBalance } });
     }
 
     setPayingInvoice(null);
