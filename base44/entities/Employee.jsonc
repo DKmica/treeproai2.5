@@ -11,7 +11,7 @@
     "position": {
       "type": "string",
       "enum": [
-        "salesman",
+        "salesperson",
         "crew_leader",
         "groundman",
         "stump_grinder"
@@ -49,6 +49,22 @@
         "commission"
       ],
       "default": "hourly"
+    },
+    "territory": {
+      "type": "string",
+      "description": "Geographic area or specialty"
+    },
+    "max_leads": {
+      "type": "number",
+      "default": 10,
+      "description": "Max concurrent leads (salesperson only)"
+    },
+    "specialties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "e.g. emergency, residential, commercial"
     },
     "notes": {
       "type": "string"

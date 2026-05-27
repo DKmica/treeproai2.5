@@ -25,7 +25,7 @@ export default function LeadAssignModal({ open, onOpenChange, lead, salespersons
     const sp = salespersons.find((s) => s.id === assignedToId);
     onSave({
       assigned_to_id: assignedToId || null,
-      assigned_to: sp?.name || null,
+      assigned_to: sp ? `${sp.first_name} ${sp.last_name}` : null,
       follow_up_date: followUpDate || null,
       follow_up_notes: followUpNotes || null,
       status,
@@ -48,7 +48,7 @@ export default function LeadAssignModal({ open, onOpenChange, lead, salespersons
               <SelectTrigger><SelectValue placeholder="Select salesperson..." /></SelectTrigger>
               <SelectContent>
                 {salespersons.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name} ({s.current_lead_count || 0}/{s.max_leads || 10} leads)</SelectItem>
+                  <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name} ({s.max_leads || 10} max leads)</SelectItem>
                 ))}
               </SelectContent>
             </Select>

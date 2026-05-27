@@ -12,14 +12,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Phone, Mail, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
 
 const POSITION_LABELS = {
-  salesman: "Salesman",
+  salesperson: "Salesperson",
   crew_leader: "Crew Leader",
   groundman: "Groundman",
   stump_grinder: "Stump Grinder",
 };
 
 const POSITION_COLORS = {
-  salesman: "bg-blue-100 text-blue-800",
+  salesperson: "bg-blue-100 text-blue-800",
   crew_leader: "bg-green-100 text-green-800",
   groundman: "bg-orange-100 text-orange-800",
   stump_grinder: "bg-purple-100 text-purple-800",

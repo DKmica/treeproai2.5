@@ -60,10 +60,11 @@ export default function Sales() {
     queryKey: ["leads"],
     queryFn: () => base44.entities.Lead.list("-created_date"),
   });
-  const { data: salespersons = [] } = useQuery({
-    queryKey: ["salespersons"],
-    queryFn: () => base44.entities.Salesperson.list(),
+  const { data: allEmployees = [] } = useQuery({
+    queryKey: ["employees"],
+    queryFn: () => base44.entities.Employee.list(),
   });
+  const salespersons = allEmployees.filter((e) => e.position === "salesperson");
 
   const updateLead = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Lead.update(id, data),
@@ -71,18 +72,18 @@ export default function Sales() {
   });
 
   const createSalesperson = useMutation({
-    mutationFn: (data) => base44.entities.Salesperson.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["salespersons"] }); setShowSalespersonForm(false); toast.success("Salesperson added"); },
+    mutationFn: (data) => base44.entities.Employee.create({ ...data, position: "salesperson" }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["employees"] }); setShowSalespersonForm(false); toast.success("Salesperson added"); },
   });
 
   const updateSalesperson = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Salesperson.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["salespersons"] }); setEditingSalesperson(null); toast.success("Salesperson updated"); },
+    mutationFn: ({ id, data }) => base44.entities.Employee.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["employees"] }); setEditingSalesperson(null); toast.success("Salesperson updated"); },
   });
 
   const deleteSalesperson = useMutation({
-    mutationFn: (id) => base44.entities.Salesperson.delete(id),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["salespersons"] }); toast.success("Salesperson removed"); },
+    mutationFn: (id) => base44.entities.Employee.delete(id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["employees"] }); toast.success("Salesperson removed"); },
   });
 
   const activeLeads = leads.filter((l) => l.status !== "won" && l.status !== "lost");
@@ -109,7 +110,7 @@ export default function Sales() {
     if (salespersons.length === 0) { toast.error("Add salespersons first."); return; }
     toast.info("AI is analyzing and assigning...");
     const salesList = salespersons.filter((s) => s.status === "active").map((s) =>
-      `${s.name} (id: ${s.id}, territory: ${s.territory || "any"}, specialties: ${(s.specialties || []).join(", ") || "general"}, current_leads: ${s.current_lead_count || 0}/${s.max_leads || 10})`
+      `${s.first_name} ${s.last_name} (id: ${s.id}, territory: ${s.territory || "any"}, specialties: ${(s.specialties || []).join(", ") || "general"}, max_leads: ${s.max_leads || 10})`
     ).join("\n");
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `Assign this tree service lead to the best salesperson.
@@ -129,7 +130,7 @@ Pick the best fit and suggest a follow-up date within 1-3 business days.`,
     updateLead.mutate({
       id: lead.id,
       data: {
-        assigned_to: result.assigned_salesperson_name,
+        assigned_to: result.assigned_salesperson_name || salespersons.find(s => s.id === result.assigned_salesperson_id)?.first_name + " " + salespersons.find(s => s.id === result.assigned_salesperson_id)?.last_name,
         assigned_to_id: result.assigned_salesperson_id,
         follow_up_date: result.follow_up_date,
         follow_up_notes: result.notes,
@@ -235,7 +236,7 @@ Pick the best fit and suggest a follow-up date within 1-3 business days.`,
               <SelectContent>
                 <SelectItem value="all">All Salespeople</SelectItem>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
-                {salespersons.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                {salespersons.map((s) => <SelectItem key={s.id} value={s.id}>{s.first_name} {s.last_name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -320,7 +321,7 @@ Pick the best fit and suggest a follow-up date within 1-3 business days.`,
                   <Card key={sp.id} className="p-4 space-y-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-semibold">{sp.name}</p>
+                        <p className="font-semibold">{sp.first_name} {sp.last_name}</p>
                         {sp.territory && <p className="text-xs text-muted-foreground">{sp.territory}</p>}
                       </div>
                       <div className="flex items-center gap-1">

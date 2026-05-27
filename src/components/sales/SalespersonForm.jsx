@@ -10,12 +10,14 @@ import { X } from "lucide-react";
 const SPECIALTY_OPTIONS = ["emergency", "residential", "commercial", "large trees", "trimming", "stump grinding", "cabling"];
 
 export default function SalespersonForm({ open, onOpenChange, initialData, onSubmit }) {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", territory: "", status: "active", max_leads: 10, specialties: [], notes: "" });
-  const [specialtyInput, setSpecialtyInput] = useState("");
+  const [form, setForm] = useState({
+    first_name: "", last_name: "", email: "", phone: "",
+    territory: "", status: "active", max_leads: 10, specialties: [], notes: ""
+  });
 
   useEffect(() => {
     if (initialData) setForm({ ...initialData });
-    else setForm({ name: "", email: "", phone: "", territory: "", status: "active", max_leads: 10, specialties: [], notes: "" });
+    else setForm({ first_name: "", last_name: "", email: "", phone: "", territory: "", status: "active", max_leads: 10, specialties: [], notes: "" });
   }, [initialData, open]);
 
   const addSpecialty = (val) => {
@@ -23,7 +25,6 @@ export default function SalespersonForm({ open, onOpenChange, initialData, onSub
     if (v && !form.specialties?.includes(v)) {
       setForm((f) => ({ ...f, specialties: [...(f.specialties || []), v] }));
     }
-    setSpecialtyInput("");
   };
 
   const removeSpecialty = (s) => setForm((f) => ({ ...f, specialties: f.specialties.filter((x) => x !== s) }));
@@ -38,9 +39,13 @@ export default function SalespersonForm({ open, onOpenChange, initialData, onSub
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 space-y-1.5">
-              <Label>Name *</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <div className="space-y-1.5">
+              <Label>First Name *</Label>
+              <Input value={form.first_name || ""} onChange={(e) => setForm({ ...form, first_name: e.target.value })} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Last Name *</Label>
+              <Input value={form.last_name || ""} onChange={(e) => setForm({ ...form, last_name: e.target.value })} required />
             </div>
             <div className="space-y-1.5">
               <Label>Email</Label>
