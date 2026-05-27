@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Palette, Mail, FileText, Loader2, Save, AlertCircle } from "lucide-react";
+import { Globe, Palette, Mail, Loader2, Save, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/treeproWorkflow";
 

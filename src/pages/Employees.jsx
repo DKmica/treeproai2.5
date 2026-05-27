@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Phone, Mail, Pencil, Trash2, UserCheck, UserX } from "lucide-react";
+import { Plus, Search, Phone, Mail, Pencil, Trash2 } from "lucide-react";
 
 const POSITION_LABELS = {
   salesperson: "Salesperson",

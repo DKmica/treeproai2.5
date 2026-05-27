@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, Sparkles, FileText, Loader2, ChevronRight } from "lucide-react";
+import { Plus, Search, MoreVertical, Sparkles, FileText, Loader2 } from "lucide-react";
 import QuoteForm from "@/components/quotes/QuoteForm";
 import GenerateFromAssessmentModal from "@/components/quotes/GenerateFromAssessmentModal";
 import { useNavigate } from "react-router-dom";
