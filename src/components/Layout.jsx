@@ -119,9 +119,11 @@ export default function Layout() {
   const SidebarContent = ({ onNavClick }) => (
     <>
       <div className={cn("p-4 border-b border-sidebar-border flex items-center", collapsed ? "justify-center" : "gap-3")}>
-        <div className="w-9 h-9 rounded-xl bg-sidebar-primary flex items-center justify-center shrink-0">
-          <TreePine className="w-5 h-5 text-sidebar-primary-foreground" />
-        </div>
+        <img
+          src="https://media.base44.com/images/public/6a15950f5b2c54c351adcf3c/28062c759_17594553825842.jpg"
+          alt="TreePro AI"
+          className="w-9 h-9 rounded-full shrink-0 object-cover ring-2 ring-sidebar-primary/40"
+        />
         {!collapsed && (
           <div>
             <h1 className="text-base font-bold text-sidebar-foreground tracking-tight">TreePro AI</h1>
@@ -191,9 +193,11 @@ export default function Layout() {
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-sidebar flex flex-col">
             <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-sidebar-primary flex items-center justify-center">
-                  <TreePine className="w-5 h-5 text-sidebar-primary-foreground" />
-                </div>
+                <img
+                  src="https://media.base44.com/images/public/6a15950f5b2c54c351adcf3c/28062c759_17594553825842.jpg"
+                  alt="TreePro AI"
+                  className="w-9 h-9 rounded-full object-cover ring-2 ring-sidebar-primary/40"
+                />
                 <h1 className="text-base font-bold text-sidebar-foreground">TreePro AI</h1>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="text-sidebar-foreground">
@@ -227,9 +231,11 @@ export default function Layout() {
             <Menu className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-2 lg:hidden">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <TreePine className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img
+              src="https://media.base44.com/images/public/6a15950f5b2c54c351adcf3c/28062c759_17594553825842.jpg"
+              alt="TreePro AI"
+              className="w-7 h-7 rounded-full object-cover"
+            />
             <span className="font-bold text-sm">TreePro AI</span>
           </div>
           <div className="flex-1" />
