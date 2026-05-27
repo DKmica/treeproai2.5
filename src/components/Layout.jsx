@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import {
   LayoutDashboard, Users, TreePine, FileText, Briefcase,
   Wrench, BarChart3, Menu, X, ChevronRight, ScanSearch, TrendingUp,
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+// adminOnly: true = hidden from non-admin users in the sidebar
 const navGroups = [
   {
     label: "Overview",
@@ -49,6 +51,7 @@ const navGroups = [
   },
   {
     label: "Admin",
+    adminOnly: true,
     items: [
       { path: "/employees", label: "Team", icon: Users },
       { path: "/integrations", label: "Integrations", icon: Plug },
@@ -108,6 +111,10 @@ function NotificationBell() {
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const { user, logout } = useAuth();
+  const isAdmin = user?.role === "admin";
+
+  const visibleNavGroups = navGroups.filter(g => !g.adminOnly || isAdmin);
 
   const SidebarContent = ({ onNavClick }) => (
     <>
@@ -124,7 +131,7 @@ export default function Layout() {
       </div>
 
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {navGroups.map((group) => (
+        {visibleNavGroups.map((group) => (
           <div key={group.label} className="mb-3">
             {!collapsed && (
               <p className="px-3 py-1 text-[10px] font-bold text-sidebar-foreground/30 uppercase tracking-widest">
@@ -195,7 +202,7 @@ export default function Layout() {
             </div>
             <div className="flex-1 overflow-y-auto">
               <nav className="p-3 space-y-0.5">
-                {navGroups.map((group) => (
+                {visibleNavGroups.map((group) => (
                   <div key={group.label} className="mb-3">
                     <p className="px-3 py-1 text-[10px] font-bold text-sidebar-foreground/30 uppercase tracking-widest">
                       {group.label}
@@ -227,11 +234,24 @@ export default function Layout() {
           </div>
           <div className="flex-1" />
           <NotificationBell />
-          <Link to="/settings">
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <Settings className="w-4 h-4 text-muted-foreground" />
-            </Button>
-          </Link>
+          {user && (
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:flex flex-col items-end leading-none">
+                <span className="text-xs font-medium text-foreground truncate max-w-[120px]">{user.full_name || user.email}</span>
+                <span className={`text-[10px] font-semibold uppercase tracking-wide ${isAdmin ? "text-amber-600" : "text-muted-foreground"}`}>{user.role || "user"}</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => logout(true)} className="text-xs text-muted-foreground hover:text-destructive h-8 px-2">
+                Sign out
+              </Button>
+            </div>
+          )}
+          {isAdmin && (
+            <Link to="/settings">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Settings className="w-4 h-4 text-muted-foreground" />
+              </Button>
+            </Link>
+          )}
         </header>
 
         <main className="flex-1 p-4 md:p-6 overflow-auto">

@@ -4,8 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Loader2, Search, Shield, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Search, Shield, ChevronDown, ChevronUp, ShieldOff } from "lucide-react";
 import { format } from "date-fns";
+import { useAuth } from "@/lib/AuthContext";
 
 const ENTITY_COLORS = {
   Quote: "bg-blue-100 text-blue-700",
@@ -68,6 +69,7 @@ function AuditEntry({ log }) {
 }
 
 export default function AuditLogPage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
 
@@ -87,6 +89,15 @@ export default function AuditLogPage() {
   });
 
   const entityTypes = [...new Set(logs.map(l => l.entity_type).filter(Boolean))];
+
+  if (user && user.role !== "admin") {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <ShieldOff className="w-12 h-12 text-muted-foreground opacity-40" />
+        <p className="text-lg font-semibold text-muted-foreground">Admin Access Required</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

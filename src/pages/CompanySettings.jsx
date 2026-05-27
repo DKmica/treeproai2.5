@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,7 @@ function FieldGroup({ label, children }) {
 }
 
 export default function CompanySettingsPage() {
+  const { user } = useAuth();
   const qc = useQueryClient();
   const [form, setForm] = useState(DEFAULT_SETTINGS);
   const [settingsId, setSettingsId] = useState(null);
@@ -97,6 +99,16 @@ export default function CompanySettingsPage() {
   const setBool = (field) => (val) => setForm((f) => ({ ...f, [field]: val }));
 
   const isConfigured = !!form.company_name && !!form.phone;
+
+  if (user && user.role !== "admin") {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <div className="w-12 h-12 text-muted-foreground opacity-40 flex items-center justify-center text-4xl">🔒</div>
+        <p className="text-lg font-semibold text-muted-foreground">Admin Access Required</p>
+        <p className="text-sm text-muted-foreground">Company settings can only be modified by admins.</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

@@ -39,12 +39,28 @@ export default function Jobs() {
   const { data: crews = [] } = useQuery({ queryKey: ["crews"], queryFn: () => base44.entities.Crew.list() });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Job.create(data),
+    mutationFn: async (data) => {
+      const job = await base44.entities.Job.create(data);
+      logActivity({ relatedType: "Job", relatedId: job.id, actor: "staff", action: `Job scheduled for ${data.customer_name}`, notes: data.description || "" });
+      logAudit({ actorName: "staff", action: "job_created", entityType: "Job", entityId: job.id, newValue: { customer: data.customer_name, status: data.status, scheduled_date: data.scheduled_date } });
+      createNotification({ type: "job_assigned", title: `Job scheduled: ${data.customer_name}`, message: data.description || "", relatedType: "Job", relatedId: job.id });
+      return job;
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["jobs"] }); setShowForm(false); toast.success("Job scheduled"); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Job.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const job = await base44.entities.Job.update(id, data);
+      if (data.status) {
+        logActivity({ relatedType: "Job", relatedId: id, actor: "staff", action: `Job status changed to ${data.status}`, notes: data.completion_notes || "" });
+        if (data.status === "completed") {
+          logAudit({ actorName: "staff", action: "job_completed", entityType: "Job", entityId: id, newValue: { status: "completed", completion_date: data.completion_date } });
+          createNotification({ type: "job_completed", title: "Job completed", message: `Job marked complete`, relatedType: "Job", relatedId: id });
+        }
+      }
+      return job;
+    },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["jobs"] }); setEditing(null); toast.success("Job updated"); },
   });
 

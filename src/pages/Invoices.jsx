@@ -235,9 +235,12 @@ export default function Invoices() {
   });
 
   const createMut = useMutation({
-    mutationFn: (data) => {
+    mutationFn: async (data) => {
       const inv_num = `INV-${Date.now().toString().slice(-6)}`;
-      return base44.entities.Invoice.create({ ...data, invoice_number: inv_num });
+      const inv = await base44.entities.Invoice.create({ ...data, invoice_number: inv_num });
+      base44.entities.ActivityLog.create({ related_type: "Invoice", related_id: inv.id, actor: "staff", action: `Invoice ${inv_num} created for ${data.customer_name}`, notes: `Total: $${(data.total || 0).toLocaleString()}` });
+      logAudit({ actorName: "staff", action: "invoice_created", entityType: "Invoice", entityId: inv.id, newValue: { invoice_number: inv_num, customer: data.customer_name, total: data.total } });
+      return inv;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["invoices"] }); setShowForm(false); toast.success("Invoice created"); },
     onError: () => toast.error("Failed to create invoice"),

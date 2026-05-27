@@ -2,8 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, XCircle, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, Loader2, ShieldOff } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 
 function CheckItem({ label, pass, warning, link, note }) {
   return (
@@ -48,6 +49,8 @@ function Section({ title, children, score, total }) {
 }
 
 export default function ProductionReadiness() {
+  const { user } = useAuth();
+
   const { data: settings = [], isLoading: loadingSettings } = useQuery({ queryKey: ["company_settings"], queryFn: () => base44.entities.CompanySettings.list() });
   const { data: employees = [] } = useQuery({ queryKey: ["employees"], queryFn: () => base44.entities.Employee.list() });
   const { data: quotes = [] } = useQuery({ queryKey: ["quotes"], queryFn: () => base44.entities.Quote.list() });
@@ -114,6 +117,16 @@ export default function ProductionReadiness() {
 
   // No hardcoded demo branding
   const noHardcodedBranding = hasCompanyName;
+
+  if (user && user.role !== "admin") {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <ShieldOff className="w-12 h-12 text-muted-foreground opacity-40" />
+        <p className="text-lg font-semibold text-muted-foreground">Admin Access Required</p>
+        <p className="text-sm text-muted-foreground">This page is only accessible to admin users.</p>
+      </div>
+    );
+  }
 
   if (loadingSettings) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
 

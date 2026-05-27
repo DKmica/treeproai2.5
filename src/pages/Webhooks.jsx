@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Webhook, Plus, Trash2, Loader2, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { Webhook, Plus, Trash2, Loader2, AlertCircle, CheckCircle2, XCircle, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -84,6 +85,7 @@ function WebhookForm({ onClose, onSave }) {
 }
 
 export default function Webhooks() {
+  const { user } = useAuth();
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
 
@@ -106,6 +108,15 @@ export default function Webhooks() {
     mutationFn: (id) => base44.entities.WebhookEndpoint.delete(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["webhooks"] }); toast.success("Webhook deleted"); },
   });
+
+  if (user && user.role !== "admin") {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <ShieldOff className="w-12 h-12 text-muted-foreground opacity-40" />
+        <p className="text-lg font-semibold text-muted-foreground">Admin Access Required</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

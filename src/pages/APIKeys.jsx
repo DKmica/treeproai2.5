@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Key, Plus, Trash2, Loader2, AlertCircle, Copy, CheckCircle2 } from "lucide-react";
+import { Key, Plus, Trash2, Loader2, AlertCircle, Copy, CheckCircle2, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { logAudit } from "@/lib/treeproWorkflow";
+import { useAuth } from "@/lib/AuthContext";
 
 function generateKeyPreview() {
   const arr = new Uint8Array(24);
@@ -20,6 +21,7 @@ function generateKeyPreview() {
 }
 
 export default function APIKeys() {
+  const { user } = useAuth();
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [newKeyData, setNewKeyData] = useState(null);
@@ -57,6 +59,15 @@ export default function APIKeys() {
   });
 
   const PERMISSION_OPTIONS = ["read", "write", "leads", "quotes", "jobs", "invoices", "admin"];
+
+  if (user && user.role !== "admin") {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <ShieldOff className="w-12 h-12 text-muted-foreground opacity-40" />
+        <p className="text-lg font-semibold text-muted-foreground">Admin Access Required</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
