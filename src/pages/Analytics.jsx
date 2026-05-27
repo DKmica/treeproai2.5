@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, TrendingUp, DollarSign, Users, Briefcase, FileText, CheckCircle2 } from "lucide-react";
+import { Loader2, TrendingUp, DollarSign, Users, Briefcase, FileText } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LineChart, Line
+  PieChart, Pie, Cell
 } from "recharts";
-import { format, subDays, startOfMonth, parseISO } from "date-fns";
+import { format } from "date-fns";
 
 const COLORS = ["#16a34a", "#f59e0b", "#3b82f6", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899"];
 

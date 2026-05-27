@@ -10,8 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  ArrowLeft, CheckCircle2, XCircle, Briefcase, Send, DollarSign,
-  FileText, Clock, Loader2, Plus, Trash2, Copy, User
+  ArrowLeft, CheckCircle2, XCircle, Briefcase, Send, DollarSign, Clock, Loader2, Plus, Trash2, Copy, User
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";

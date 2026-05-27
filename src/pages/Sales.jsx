@@ -2,7 +2,7 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from "sonner";
 import {
   Plus, Search, MoreVertical, Phone, Mail, MapPin, Sparkles,
-  CalendarDays, UserCheck, TrendingUp, AlertTriangle, Clock, ChevronRight
+  CalendarDays, UserCheck, TrendingUp, AlertTriangle, Clock
 } from "lucide-react";
 import SalespersonForm from "@/components/sales/SalespersonForm";
 import LeadAssignModal from "@/components/sales/LeadAssignModal";

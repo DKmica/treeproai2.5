@@ -1,21 +1,20 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { logActivity, logAudit, createNotification } from "@/lib/treeproWorkflow";
+import { logActivity, logAudit } from "@/lib/treeproWorkflow";
 import AIQuoteBuilder from "@/components/quotes/AIQuoteBuilder";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
 import {
   ScanSearch, Search, Loader2, CheckCircle2, AlertCircle, Clock,
-  XCircle, Eye, TreePine, DollarSign, Sparkles, Camera, MapPin,
-  User, AlertTriangle, ChevronDown, ChevronUp
+  XCircle, Eye, TreePine, DollarSign, Sparkles, MapPin, AlertTriangle, ChevronDown, ChevronUp
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
