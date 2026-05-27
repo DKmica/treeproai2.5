@@ -207,6 +207,19 @@ export default function ProductionReadiness() {
         <CheckItem label="Accounting integration (QuickBooks/Xero)" pass={hasAccountingIntegration} warning={!hasAccountingIntegration} note="Integration required — for financial sync" link="/integrations" />
       </Section>
 
+      {/* Security Warning — always shown */}
+      <Card className="border-orange-300 bg-orange-50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-orange-800">⚠ Security Limitations — Action Required Before Full Production</CardTitle>
+        </CardHeader>
+        <CardContent className="text-xs text-orange-700 space-y-1.5 pt-0">
+          <p>• <strong>Role-aware UI</strong> — The sidebar hides pages based on role, but this is client-side only. A determined user can navigate directly. Server-side API permission enforcement is required before multi-user production use.</p>
+          <p>• <strong>Public rate limiting</strong> — Client-side rate limiting is applied on the public estimate page. Server-side rate limiting (e.g., Cloudflare, Upstash) is required to prevent abuse at scale.</p>
+          <p>• <strong>CAPTCHA</strong> — Integration required (e.g., hCaptcha, Cloudflare Turnstile) to fully prevent bot submissions on the public estimate form.</p>
+          <p>• <strong>Audit log coverage</strong> — ActivityLog and AuditLog are created for major actions. Coverage of all sensitive admin operations should be reviewed before SOC/compliance use.</p>
+        </CardContent>
+      </Card>
+
       <div className="text-xs text-muted-foreground text-center pb-4">
         ✓ = Ready · ⚠ = Recommended but optional · ✗ = Action required before going live with real customers
       </div>

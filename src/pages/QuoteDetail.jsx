@@ -182,24 +182,45 @@ export default function QuoteDetail() {
   const convertToJob = async () => {
     setConverting(true);
     try {
+      // Fetch AI analysis record if linked, for additional field mapping
+      let aiRecord = null;
+      if (quote.ai_analysis_id) {
+        const arr = await base44.entities.AIAnalysisRecord.filter({ id: quote.ai_analysis_id }).catch(() => []);
+        aiRecord = arr[0] || null;
+      }
+
+      // Determine priority from risk/urgency
+      const riskLevel = quote.risk_level || aiRecord?.risk_level;
+      const urgency = aiRecord?.urgency_level;
+      let priority = "normal";
+      if (urgency === "emergency" || riskLevel === "extreme") priority = "emergency";
+      else if (riskLevel === "high" || quote.crane_required) priority = "high";
+
+      // Build address — always set both fields for Crew Mode map support
+      const address = quote.customer_address || customer?.address || "";
+
       const job = await base44.entities.Job.create({
         customer_id: quote.customer_id,
         customer_name: quote.customer_name,
         customer_phone: quote.customer_phone || customer?.phone || "",
         customer_email: quote.customer_email || customer?.email || "",
-        customer_address: quote.customer_address || customer?.address || "",
+        customer_address: address,
+        address: address,  // Crew Mode uses job.address for Google Maps
         quote_id: id,
         ai_analysis_id: quote.ai_analysis_id || "",
         status: "unscheduled",
-        priority: "normal",
+        priority,
         description: quote.scope_of_work || quote.notes || "From quote",
         scope_of_work: quote.scope_of_work || "",
         total_cost: quote.total_amount || 0,
         line_items: quote.line_items || [],
-        risk_level: quote.risk_level || undefined,
-        crane_required: quote.crane_required || false,
-        estimated_duration_hours: quote.estimated_duration_hours || undefined,
-        required_crew_size: quote.required_crew_size || undefined,
+        risk_level: riskLevel || undefined,
+        hazards: aiRecord?.hazards_detected || quote.access_notes || "",
+        safety_notes: aiRecord?.condition_summary ? `Tree condition: ${aiRecord.condition_summary}` : "",
+        access_notes: quote.access_notes || (aiRecord?.access_difficulty ? `Access: ${aiRecord.access_difficulty}` : ""),
+        crane_required: quote.crane_required || aiRecord?.crane_required || false,
+        estimated_duration_hours: quote.estimated_duration_hours || (riskLevel === "extreme" ? 10 : riskLevel === "high" ? 8 : 4),
+        required_crew_size: quote.required_crew_size || (riskLevel === "extreme" ? 4 : riskLevel === "high" ? 3 : 2),
         notes: `Converted from quote #${quote.quote_number || id.slice(0, 8)}`,
       });
       await updateMutation.mutateAsync({ status: "converted_to_job" });

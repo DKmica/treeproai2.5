@@ -2,6 +2,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
   try {
+    // NOTE: This is a public endpoint — do NOT call base44.auth.me() here.
+    // All operations use service role to allow unauthenticated public form submissions.
     const base44 = createClientFromRequest(req);
     const body = await req.json();
 

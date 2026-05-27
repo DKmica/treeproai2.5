@@ -134,11 +134,14 @@ Respond as the AI Arborist. If you have enough information for an estimate, prov
       ...(image_urls && image_urls.length > 0 && { file_urls: image_urls }),
     });
 
-    // If it looks like a final estimate has been given, extract structured data
+    // Extract structured data whenever there's price info OR photos were uploaded
+    // Do NOT gate on message count — always extract if there's enough signal
     let structuredAssessment = null;
     const replyText = typeof response === "string" ? response : JSON.stringify(response);
     const hasPriceRange = /\$[\d,]+\s*[–\-–to]+\s*\$[\d,]+/i.test(replyText);
-    if (hasPriceRange && messages && messages.length >= 3) {
+    const hasSpeciesInfo = /oak|pine|maple|elm|sycamore|hickory|cedar|birch|species|height|diameter|dbh/i.test(replyText);
+    const shouldExtract = hasPriceRange || (hasSpeciesInfo && (image_urls?.length > 0 || (messages && messages.length >= 2)));
+    if (shouldExtract) {
       const structurePrompt = `Based on this tree assessment conversation, extract structured data as JSON:
 ---
 ${replyText}

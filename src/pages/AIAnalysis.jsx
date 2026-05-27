@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { buildLineItemsFromAnalysis, saveQuoteVersion, logActivity, logAudit, createNotification } from "@/lib/treeproWorkflow";
+import { logActivity, logAudit, createNotification } from "@/lib/treeproWorkflow";
+import AIQuoteBuilder from "@/components/quotes/AIQuoteBuilder";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -167,7 +168,7 @@ export default function AIAnalysis() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [reviewing, setReviewing] = useState(null);
-  const [generatingQuote, setGeneratingQuote] = useState(null);
+  const [buildingQuote, setBuildingQuote] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
 
   const { data: records = [], isLoading } = useQuery({
@@ -186,54 +187,6 @@ export default function AIAnalysis() {
     },
     onError: () => toast.error("Failed to save review"),
   });
-
-  const handleGenerateQuote = async (record) => {
-    setGeneratingQuote(record.id);
-    try {
-      const settingsArr = await base44.entities.CompanySettings.list();
-      const s = settingsArr[0] || {};
-      const { lineItems, subtotal, total } = buildLineItemsFromAnalysis(record, s);
-      const expiryDate = new Date(Date.now() + (s.quote_expiration_days || 30) * 86400000).toISOString().split("T")[0];
-
-      const quote = await base44.entities.Quote.create({
-        quote_number: `Q-${Date.now().toString(36).toUpperCase()}`,
-        customer_id: record.customer_id || "",
-        lead_id: record.lead_id || "",
-        ai_analysis_id: record.id,
-        line_items: lineItems,
-        subtotal,
-        total_amount: total,
-        ai_generated: true,
-        ai_analysis: record.ai_reasoning_summary || record.condition_summary || "",
-        scope_of_work: record.recommended_service || "Tree Service",
-        risk_level: record.risk_level || undefined,
-        crane_required: record.crane_likely || false,
-        estimated_duration_hours: record.estimated_height_ft_high > 50 ? 8 : 4,
-        status: "draft",
-        valid_until: expiryDate,
-        hazards: record.hazards_detected || "",
-        access_notes: record.access_difficulty ? `Access: ${record.access_difficulty}` : "",
-      });
-
-      // QuoteVersion v1
-      await saveQuoteVersion({ ...quote, id: quote.id }, [], "AI Analysis", "Auto-generated from AI assessment");
-
-      // Link back to analysis record
-      await base44.entities.AIAnalysisRecord.update(record.id, { quote_id: quote.id });
-
-      // Activity + Audit logs
-      await logActivity({ relatedType: "Quote", relatedId: quote.id, actor: "staff", action: `Quote created from AI analysis`, notes: `${record.recommended_service || "tree service"} · $${total.toLocaleString()}` });
-      await logAudit({ actorName: "staff", action: "quote_generated_from_analysis", entityType: "Quote", entityId: quote.id, newValue: { total, source: "ai_analysis", analysis_id: record.id } });
-      await createNotification({ type: "ai_review_needed", title: `Quote ready: ${record.recommended_service || "Tree Service"}`, message: `$${total.toLocaleString()} — review and send to customer`, relatedType: "Quote", relatedId: quote.id });
-
-      qc.invalidateQueries({ queryKey: ["ai_analysis"] });
-      toast.success("Quote created with v1 snapshot!");
-      navigate(`/quotes/${quote.id}`);
-    } catch (err) {
-      toast.error("Failed to generate quote: " + err.message);
-    }
-    setGeneratingQuote(null);
-  };
 
   const filtered = records.filter(r => {
     const matchesSearch =
@@ -378,7 +331,7 @@ export default function AIAnalysis() {
                           <p className="font-semibold">${record.price_low.toLocaleString()}–${record.price_high?.toLocaleString()}</p>
                         ) : null}
                         {record.confidence_score && (
-                          <p className="text-xs text-muted-foreground">{Math.round(record.confidence_score * 100)}% confidence</p>
+                          <p className="text-xs text-muted-foreground">{Math.round(record.confidence_score > 1 ? record.confidence_score : record.confidence_score * 100)}% confidence</p>
                         )}
                       </div>
                       <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setReviewing(record)}>
@@ -388,11 +341,10 @@ export default function AIAnalysis() {
                         <Button
                           size="sm"
                           className="gap-1.5 bg-primary"
-                          disabled={generatingQuote === record.id}
-                          onClick={() => handleGenerateQuote(record)}
+                          onClick={() => setBuildingQuote(record)}
                         >
-                          {generatingQuote === record.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                          Generate Quote
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Build Quote
                         </Button>
                       )}
                       {record.quote_id && (
@@ -418,6 +370,15 @@ export default function AIAnalysis() {
           record={reviewing}
           onClose={() => setReviewing(null)}
           onSave={(data) => updateMut.mutate({ id: reviewing.id, data })}
+        />
+      )}
+
+      {buildingQuote && (
+        <AIQuoteBuilder
+          record={buildingQuote}
+          open={!!buildingQuote}
+          onOpenChange={(v) => { if (!v) setBuildingQuote(null); }}
+          onQuoteCreated={() => qc.invalidateQueries({ queryKey: ["ai_analysis"] })}
         />
       )}
     </div>

@@ -129,25 +129,37 @@ function LeadCaptureForm({ assessmentText, photoUrls, onLeadCreated, company, st
       }
     } catch (_) { /* proceed without customer link */ }
 
-    // Create AIAnalysisRecord with structured data if available
-    if (leadId || customerId) {
-      try {
-        await base44.entities.AIAnalysisRecord.create({
-          lead_id: leadId || "",
-          customer_id: customerId || "",
-          image_urls: photoUrls || [],
-          original_customer_notes: assessmentText?.slice(0, 3000) || "",
-          human_review_status: "pending",
-          ...(structuredAssessment || {}),
-        });
-        await base44.entities.ActivityLog.create({
-          related_type: "Lead",
-          related_id: leadId || "",
-          actor: "customer",
-          action: "AI assessment completed via public estimate",
-          notes: `${form.name} · ${form.phone}`,
-        });
-      } catch (_) { /* non-blocking */ }
+    // ALWAYS create AIAnalysisRecord — with structured data if available, otherwise with notes/photos only
+    // This ensures staff can always review the public estimate, even with minimal AI extraction
+    try {
+      const analysisData = {
+        lead_id: leadId || "",
+        customer_id: customerId || "",
+        image_urls: photoUrls || [],
+        original_customer_notes: assessmentText?.slice(0, 3000) || "",
+        human_review_status: "pending",
+      };
+      // Merge in structured assessment fields if available
+      if (structuredAssessment && typeof structuredAssessment === "object") {
+        Object.assign(analysisData, structuredAssessment);
+      }
+      await base44.entities.AIAnalysisRecord.create(analysisData);
+      await base44.entities.ActivityLog.create({
+        related_type: "Lead",
+        related_id: leadId || "",
+        actor: "customer",
+        action: "AI assessment completed via public estimate",
+        notes: `${form.name} · ${form.phone}${photoUrls?.length > 0 ? ` · ${photoUrls.length} photos` : ""}`,
+      });
+      await base44.entities.AuditLog.create({
+        actor_name: "public_estimate",
+        action: "ai_analysis_record_created",
+        entity_type: "AIAnalysisRecord",
+        notes: `Public estimate from ${form.name}`,
+      }).catch(() => {});
+    } catch (err) {
+      console.error("Failed to create AIAnalysisRecord:", err);
+      // Non-blocking — lead was still created
     }
 
     // Create notification

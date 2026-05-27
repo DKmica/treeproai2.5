@@ -20,10 +20,14 @@ import { format, isToday, isTomorrow, isPast, parseISO, isThisWeek } from "date-
 const statusColors = {
   new: "bg-blue-100 text-blue-700 border-blue-200",
   contacted: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  attempting_contact: "bg-amber-100 text-amber-700 border-amber-200",
+  left_voicemail: "bg-orange-100 text-orange-600 border-orange-200",
   qualified: "bg-purple-100 text-purple-700 border-purple-200",
   quoted: "bg-orange-100 text-orange-700 border-orange-200",
+  negotiating: "bg-indigo-100 text-indigo-700 border-indigo-200",
   won: "bg-green-100 text-green-700 border-green-200",
   lost: "bg-red-100 text-red-700 border-red-200",
+  disqualified: "bg-gray-100 text-gray-500 border-gray-200",
 };
 
 const urgencyColors = {
@@ -238,7 +242,7 @@ Pick the best fit and suggest a follow-up date within 1-3 business days.`,
               <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                {["new", "contacted", "qualified", "quoted"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {["new", "contacted", "attempting_contact", "left_voicemail", "qualified", "quoted", "negotiating"].map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g," ")}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

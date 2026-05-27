@@ -15,10 +15,14 @@ import { useNavigate } from "react-router-dom";
 const statusColors = {
   new: "bg-blue-100 text-blue-700",
   contacted: "bg-yellow-100 text-yellow-700",
+  attempting_contact: "bg-amber-100 text-amber-700",
+  left_voicemail: "bg-orange-100 text-orange-600",
   qualified: "bg-purple-100 text-purple-700",
   quoted: "bg-orange-100 text-orange-700",
+  negotiating: "bg-indigo-100 text-indigo-700",
   won: "bg-green-100 text-green-700",
   lost: "bg-red-100 text-red-700",
+  disqualified: "bg-gray-100 text-gray-500",
 };
 
 const urgencyColors = {
