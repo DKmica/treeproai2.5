@@ -103,8 +103,7 @@ export function calculateScenarioPricing(analysis, settings = {}) {
   const stumpBase = s.stump_grinding_base_price || 100;
   const stumpPerInch = s.stump_grinding_per_inch || 4;
   const craneRate = s.crane_day_rate || 1500;
-  const dumpBase = s.dump_fee_base || 75;
-  const disposalPerYard = s.disposal_fee_per_cubic_yard || 25;
+  // Debris disposal removed — included in service price
 
   const denseWoodMkp = ((analysis.detected_species || "").toLowerCase().match(/oak|hickory|sycamore|elm|ash/) ? (s.oak_dense_wood_markup_percent || 15) : 0) / 100;
   const structureMkp = (analysis.canopy_over_structure ? (s.structure_overhang_markup_percent || 20) : 0) / 100;
@@ -152,10 +151,6 @@ export function calculateScenarioPricing(analysis, settings = {}) {
   const stumpLow = Math.max(Math.round(stumpPrice * 0.9 / 5) * 5, stumpBase);
   const stumpHigh = Math.round(stumpPrice * 1.1 / 5) * 5;
 
-  // Debris cleanup estimate
-  const debrisYards = heightMid < 25 ? 2 : heightMid < 50 ? 4 : heightMid < 75 ? 7 : 12;
-  const debrisCost = Math.round(dumpBase + debrisYards * disposalPerYard);
-
   // Default overall low/high (use no-crane as default unless crane_required)
   const priceLow = analysis.crane_required ? craneLow : noCraneLow;
   const priceHigh = analysis.crane_required ? craneHigh : noCraneHigh;
@@ -173,12 +168,13 @@ export function calculateScenarioPricing(analysis, settings = {}) {
     crane_required_price_high: craneHigh,
     stump_price_low: stumpLow,
     stump_price_high: stumpHigh,
-    debris_cost: debrisCost,
     pricing_scenarios: {
       advanced_rigging: { label: "Advanced Rigging (No Crane)", low: noCraneLow, high: noCraneHigh, recommended: !analysis.crane_required },
       crane_assisted: { label: "Crane-Assisted Removal", low: craneLow, high: craneHigh, recommended: !!(analysis.crane_required || analysis.crane_likely) },
       stump_grinding: { label: "Optional Stump Grinding", low: stumpLow, high: stumpHigh, optional: true },
-      cleanup: { label: "Debris Removal & Cleanup", flat: debrisCost, optional: false },
+      haul_grindings: { label: "Haul Grindings (per stump)", flat: 500, optional: true },
+      add_dirt_seed: { label: "Add Dirt & Grass Seed (per stump)", flat: 500, optional: true },
+      add_sod: { label: "Add Sod (per stump)", flat: 1500, optional: true },
     },
   };
 }
@@ -210,10 +206,10 @@ export function buildLineItemsFromAnalysis(record, settings, options = {}) {
     },
   ];
 
-  // Crane line item (if separate from main)
-  if (includeCrane && scenario !== "crane") {
+  // Additional special equipment (crane or other — custom price, only added when crane_required)
+  if (includeCrane || record.crane_required) {
     const craneRate = s.crane_day_rate || 1500;
-    lineItems.push({ description: "Crane / Lift Equipment", quantity: 1, unit_price: craneRate, total: craneRate });
+    lineItems.push({ description: "Additional Equipment (Crane / Specialty)", quantity: 1, unit_price: craneRate, total: craneRate });
   }
 
   // Stump grinding
@@ -226,16 +222,10 @@ export function buildLineItemsFromAnalysis(record, settings, options = {}) {
       unit_price: stumpPrice,
       total: stumpPrice,
     });
-  }
-
-  // Debris cleanup
-  if (record.recommended_service?.toLowerCase().includes("remov") || pricing.debris_cost >= 100) {
-    lineItems.push({
-      description: "Debris Removal & Site Cleanup",
-      quantity: 1,
-      unit_price: pricing.debris_cost,
-      total: pricing.debris_cost,
-    });
+    // Stump add-on options (priced per stump, quantity defaults to 1)
+    lineItems.push({ description: "Haul Grindings", quantity: 1, unit_price: 500, total: 500 });
+    lineItems.push({ description: "Add Dirt & Grass Seed", quantity: 1, unit_price: 500, total: 500 });
+    lineItems.push({ description: "Add Sod", quantity: 1, unit_price: 1500, total: 1500 });
   }
 
   // Travel fee
