@@ -92,5 +92,15 @@
   "required": [
     "customer_id",
     "customer_name"
-  ]
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }

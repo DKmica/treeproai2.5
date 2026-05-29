@@ -42,5 +42,15 @@
   "required": [
     "customer_id",
     "address"
-  ]
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }

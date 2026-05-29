@@ -83,5 +83,15 @@
   },
   "required": [
     "customer_id"
-  ]
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }
