@@ -283,6 +283,8 @@ export default function Invoices() {
     if (newStatus === "paid") {
       if (inv.job_id) {
         base44.entities.Job.update(inv.job_id, { status: "paid", invoice_id: inv.id }).catch(() => {});
+        // Record estimate accuracy for AI feedback loop
+        base44.functions.invoke("recordJobAccuracy", { job_id: inv.job_id }).catch(() => {});
       }
       if (inv.quote_id) {
         base44.entities.Quote.update(inv.quote_id, { status: "paid" }).catch(() => {});
@@ -310,7 +312,13 @@ export default function Invoices() {
     toast.success(newStatus === "paid" ? "Invoice marked as paid!" : `Payment of $${amount.toLocaleString()} recorded`);
   };
 
-  const markPaid = (inv) => updateMut.mutate({ id: inv.id, data: { status: "paid", amount_paid: inv.total, balance_due: 0 } });
+  const markPaid = (inv) => {
+    updateMut.mutate({ id: inv.id, data: { status: "paid", amount_paid: inv.total, balance_due: 0 } });
+    // Record estimate accuracy for AI feedback loop
+    if (inv.job_id) {
+      base44.functions.invoke("recordJobAccuracy", { job_id: inv.job_id }).catch(() => {});
+    }
+  };
 
   const filtered = invoices.filter(inv =>
     (inv.customer_name || "").toLowerCase().includes(search.toLowerCase()) ||

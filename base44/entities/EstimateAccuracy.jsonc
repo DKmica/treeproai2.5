@@ -1,0 +1,96 @@
+{
+  "name": "EstimateAccuracy",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string"
+    },
+    "quote_id": {
+      "type": "string"
+    },
+    "ai_analysis_id": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "species": {
+      "type": "string"
+    },
+    "risk_level": {
+      "type": "string"
+    },
+    "complexity_tier": {
+      "type": "string"
+    },
+    "crane_used": {
+      "type": "boolean"
+    },
+    "structures_nearby": {
+      "type": "boolean"
+    },
+    "estimated_price_low": {
+      "type": "number"
+    },
+    "estimated_price_high": {
+      "type": "number"
+    },
+    "quoted_price": {
+      "type": "number"
+    },
+    "actual_invoiced": {
+      "type": "number"
+    },
+    "actual_labor_hours": {
+      "type": "number"
+    },
+    "dump_expense_actual": {
+      "type": "number"
+    },
+    "accuracy_pct": {
+      "type": "number",
+      "description": "How close quoted was to actual invoiced \u2014 positive means over-estimated, negative means under-estimated"
+    },
+    "service_type": {
+      "type": "string"
+    },
+    "height_ft_avg": {
+      "type": "number"
+    },
+    "dbh_inches_avg": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "job_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

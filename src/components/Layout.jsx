@@ -45,6 +45,7 @@ const navGroups = [
     items: [
       { path: "/tree-assessment", label: "AI Assessment", icon: ScanSearch },
       { path: "/ai-analysis", label: "AI Analysis", icon: ScanSearch },
+      { path: "/ai-insights", label: "AI Insights", icon: TrendingUp },
       { path: "/tree-inventory", label: "Tree Inventory", icon: TreePine },
     ],
   },
