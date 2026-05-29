@@ -46,7 +46,11 @@
     "create": {
       "created_by_id": "{{user.id}}"
     },
-    "read": {},
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
     "update": {
       "user_condition": {
         "role": "admin"
