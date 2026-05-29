@@ -11,8 +11,9 @@ import {
 import {
   MapPin, Phone, CheckCircle2, Clock, Camera, Navigation,
   AlertTriangle, Loader2, ChevronRight, HardHat, Play, Pause,
-  ShieldCheck, Timer
+  ShieldCheck, Timer, LayoutList, Users
 } from "lucide-react";
+import TeamDailyOverview from "@/components/crew/TeamDailyOverview";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { logActivity, createNotification } from "@/lib/treeproWorkflow";
@@ -338,6 +339,7 @@ export default function CrewMode() {
   const qc = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const [safetyJob, setSafetyJob] = useState(null);
+  const [view, setView] = useState("my_jobs"); // "my_jobs" | "team_overview"
 
   const { data: jobs = [], isLoading } = useQuery({
     queryKey: ["crew_jobs"],
@@ -409,7 +411,7 @@ export default function CrewMode() {
   return (
     <div className="max-w-lg mx-auto space-y-4 pb-8">
       <div className="sticky top-0 bg-background border-b py-4 z-10">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
               <HardHat className="w-5 h-5 text-primary" /> Crew Mode
@@ -424,44 +426,69 @@ export default function CrewMode() {
             </div>
           )}
         </div>
+        {/* View toggle */}
+        <div className="flex gap-1 bg-muted rounded-lg p-1">
+          <button
+            onClick={() => setView("my_jobs")}
+            className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md transition-colors ${
+              view === "my_jobs" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <LayoutList className="w-3.5 h-3.5" /> My Jobs
+          </button>
+          <button
+            onClick={() => setView("team_overview")}
+            className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-md transition-colors ${
+              view === "team_overview" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" /> Team Overview
+          </button>
+        </div>
       </div>
 
-      {todayJobs.length === 0 ? (
-        <div className="text-center py-16">
-          <CheckCircle2 className="w-12 h-12 mx-auto text-green-500 mb-3 opacity-60" />
-          <p className="font-semibold text-lg">No jobs scheduled today</p>
-          <p className="text-muted-foreground text-sm mt-1">Check back later or contact your supervisor</p>
-        </div>
+      {view === "team_overview" ? (
+        <TeamDailyOverview />
       ) : (
-        <div className="space-y-4">
-          {todayJobs.map(job => (
-            <JobCard
-              key={job.id}
-              job={job}
-              onUpdateStatus={(id, status) => updateStatus.mutate({ id, status })}
-              onUploadPhoto={handleUploadPhoto}
-              onSafetyChecklist={(j) => setSafetyJob(j)}
-            />
-          ))}
-        </div>
-      )}
+        <>
+          {todayJobs.length === 0 ? (
+            <div className="text-center py-16">
+              <CheckCircle2 className="w-12 h-12 mx-auto text-green-500 mb-3 opacity-60" />
+              <p className="font-semibold text-lg">No jobs scheduled today</p>
+              <p className="text-muted-foreground text-sm mt-1">Check back later or contact your supervisor</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {todayJobs.map(job => (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  onUpdateStatus={(id, status) => updateStatus.mutate({ id, status })}
+                  onUploadPhoto={handleUploadPhoto}
+                  onSafetyChecklist={(j) => setSafetyJob(j)}
+                />
+              ))}
+            </div>
+          )}
 
-      {/* Other jobs section */}
-      {jobs.length > todayJobs.length && (
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Other Active Jobs</p>
-          <div className="space-y-3">
-            {jobs.filter(j => !todayJobs.includes(j)).map(job => (
-              <JobCard
-                key={job.id}
-                job={job}
-                onUpdateStatus={(id, status) => updateStatus.mutate({ id, status })}
-                onUploadPhoto={handleUploadPhoto}
-                onSafetyChecklist={(j) => setSafetyJob(j)}
-              />
-            ))}
-          </div>
-        </div>
+          {/* Other jobs section */}
+          {jobs.length > todayJobs.length && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Other Active Jobs</p>
+              <div className="space-y-3">
+                {jobs.filter(j => !todayJobs.includes(j)).map(job => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    onUpdateStatus={(id, status) => updateStatus.mutate({ id, status })}
+                    onUploadPhoto={handleUploadPhoto}
+                    onSafetyChecklist={(j) => setSafetyJob(j)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {safetyJob && (
