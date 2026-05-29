@@ -11,6 +11,7 @@ import { Plus, Search, MoreVertical, MapPin, Calendar, Users, DollarSign, Receip
 import { logActivity, logAudit, createNotification } from "@/lib/treeproWorkflow";
 import { useNavigate } from "react-router-dom";
 import JobForm from "@/components/jobs/JobForm";
+import GenerateInvoiceDialog from "@/components/jobs/GenerateInvoiceDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -31,6 +32,7 @@ export default function Jobs() {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [invoiceJob, setInvoiceJob] = useState(null);
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
 
@@ -110,6 +112,16 @@ export default function Jobs() {
                     {j.crew_name && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{j.crew_name}</span>}
                     {j.total_cost > 0 && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />${j.total_cost.toLocaleString()}</span>}
                   </div>
+                  {/* Prominent Generate Invoice button for completed jobs */}
+                  {j.status === "completed" && (
+                    <Button
+                      size="sm"
+                      className="gap-1.5 mt-1"
+                      onClick={() => setInvoiceJob(j)}
+                    >
+                      <Receipt className="w-3.5 h-3.5" /> Generate Invoice
+                    </Button>
+                  )}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
@@ -118,28 +130,7 @@ export default function Jobs() {
                     {j.status === "scheduled" && <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "in_progress" } })}>Start Job</DropdownMenuItem>}
                     {j.status === "in_progress" && <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "completed", completion_date: new Date().toISOString().split("T")[0] } })}>Complete Job</DropdownMenuItem>}
                     {j.status === "completed" && (
-                      <DropdownMenuItem onClick={async () => {
-                       const invNum = `INV-${Date.now().toString().slice(-6)}`;
-                       const inv = await base44.entities.Invoice.create({
-                         customer_id: j.customer_id,
-                         customer_name: j.customer_name,
-                         job_id: j.id,
-                         quote_id: j.quote_id || "",
-                         invoice_number: invNum,
-                         line_items: j.line_items || [{ description: j.description, quantity: 1, unit_price: j.total_cost || 0, total: j.total_cost || 0 }],
-                         subtotal: j.total_cost || 0,
-                         total: j.total_cost || 0,
-                         balance_due: j.total_cost || 0,
-                         status: "draft",
-                         due_date: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-                       });
-                       updateMutation.mutate({ id: j.id, data: { status: "invoiced", invoice_id: inv.id } });
-                       await logActivity({ relatedType: "Invoice", relatedId: inv.id, actor: "staff", action: `Invoice ${invNum} created from job`, notes: j.customer_name });
-                       await logAudit({ actorName: "staff", action: "invoice_created_from_job", entityType: "Invoice", entityId: inv.id, newValue: { job_id: j.id, customer: j.customer_name, total: j.total_cost } });
-                       await createNotification({ type: "general", title: `Invoice ${invNum} created`, message: `${j.customer_name} — $${(j.total_cost || 0).toLocaleString()}`, relatedType: "Invoice", relatedId: inv.id });
-                       toast.success("Invoice created");
-                       navigate("/invoices");
-                      }}>
+                      <DropdownMenuItem onClick={() => setInvoiceJob(j)}>
                         <Receipt className="w-4 h-4 mr-2" />Generate Invoice
                       </DropdownMenuItem>
                     )}
@@ -154,6 +145,7 @@ export default function Jobs() {
 
       <JobForm open={showForm} onOpenChange={setShowForm} customers={customers} crews={crews} onSubmit={(d) => createMutation.mutate(d)} />
       {editing && <JobForm open={!!editing} onOpenChange={() => setEditing(null)} customers={customers} crews={crews} initialData={editing} onSubmit={(d) => updateMutation.mutate({ id: editing.id, data: d })} />}
+      {invoiceJob && <GenerateInvoiceDialog job={invoiceJob} onClose={() => setInvoiceJob(null)} />}
     </div>
   );
 }
