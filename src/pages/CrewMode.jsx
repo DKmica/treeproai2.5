@@ -14,6 +14,7 @@ import {
   ShieldCheck, Timer, LayoutList, Users
 } from "lucide-react";
 import TeamDailyOverview from "@/components/crew/TeamDailyOverview";
+import DumpLogSection from "@/components/crew/DumpLogSection";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { logActivity, createNotification } from "@/lib/treeproWorkflow";
@@ -300,6 +301,13 @@ function JobCard({ job, onUpdateStatus, onUploadPhoto, onSafetyChecklist }) {
             ))}
           </div>
         </div>
+
+        {/* Dump runs — visible once job is underway or completed */}
+        {(job.status === "in_progress" || job.status === "paused" || job.status === "completed") && (
+          <div className="border-t pt-3">
+            <DumpLogSection job={job} />
+          </div>
+        )}
 
         {/* Pause button while in progress */}
         {job.status === "in_progress" && (

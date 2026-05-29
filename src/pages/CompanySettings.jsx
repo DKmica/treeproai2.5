@@ -41,6 +41,8 @@ const DEFAULT_SETTINGS = {
   crane_day_rate: 1500,
   dump_fee_base: 75,
   disposal_fee_per_cubic_yard: 25,
+  dump_fee_chips_min: 50,
+  dump_fee_wood_min: 100,
   quote_expiration_days: 30,
   public_estimate_disclaimer: "This is a preliminary AI-generated estimate based on photos and information provided. A certified arborist will confirm the final price during a free on-site visit. Prices may vary based on actual site conditions.",
   terms_and_conditions: "",
@@ -271,6 +273,17 @@ export default function CompanySettingsPage() {
                   </FieldGroup>
                   <FieldGroup label="Disposal / Cubic Yard ($)">
                     <Input type="number" value={form.disposal_fee_per_cubic_yard} onChange={setNum("disposal_fee_per_cubic_yard")} />
+                  </FieldGroup>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3 mb-3">
+                  Minimum dump fees are used to calculate crew savings when they dump for free. Set these to your typical local dump site rates.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FieldGroup label="Min Dump Fee — Chips ($ per load)">
+                    <Input type="number" value={form.dump_fee_chips_min} onChange={setNum("dump_fee_chips_min")} placeholder="50" />
+                  </FieldGroup>
+                  <FieldGroup label="Min Dump Fee — Wood / Logs ($ per load)">
+                    <Input type="number" value={form.dump_fee_wood_min} onChange={setNum("dump_fee_wood_min")} placeholder="100" />
                   </FieldGroup>
                 </div>
               </div>

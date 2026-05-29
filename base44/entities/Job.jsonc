@@ -164,6 +164,47 @@
     "time_out": {
       "type": "string",
       "format": "date-time"
+    },
+    "dump_logs": {
+      "type": "array",
+      "description": "Dump run records logged by crew \u2014 chips and wood loads, whether paid, and amount",
+      "items": {
+        "type": "object",
+        "properties": {
+          "material": {
+            "type": "string",
+            "description": "chips or wood"
+          },
+          "loads": {
+            "type": "number"
+          },
+          "paid": {
+            "type": "boolean"
+          },
+          "amount_paid": {
+            "type": "number"
+          },
+          "site_name": {
+            "type": "string"
+          },
+          "logged_at": {
+            "type": "string"
+          },
+          "logged_by": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dump_expense_total": {
+      "type": "number",
+      "default": 0,
+      "description": "Total dump fees paid on this job"
+    },
+    "dump_savings_total": {
+      "type": "number",
+      "default": 0,
+      "description": "Total dump fees saved (free dumps \u00d7 minimum fee)"
     }
   },
   "required": [
