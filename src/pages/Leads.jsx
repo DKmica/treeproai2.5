@@ -108,6 +108,34 @@ Address: ${lead.address || "Not provided"}`,
     onError: () => { setScoringId(null); toast.error("AI scoring failed"); },
   });
 
+  const handleCreateQuote = async (lead) => {
+    // If the lead has an AI analysis, fetch it and pre-fill the assessment modal
+    if (lead.ai_analysis_id) {
+      try {
+        const analyses = await base44.entities.AIAnalysisRecord.filter({ id: lead.ai_analysis_id });
+        const analysis = analyses[0];
+        if (analysis) {
+          // Build assessment text from the stored conversation / notes
+          const assessmentText = analysis.original_customer_notes || "";
+          navigate("/quotes", {
+            state: {
+              autoOpenAssessment: true,
+              assessmentText,
+              aiAnalysisId: analysis.id,
+              leadId: lead.id,
+              customerName: `${lead.first_name} ${lead.last_name}`,
+              prefillCustomerName: `${lead.first_name} ${lead.last_name}`,
+              structuredAnalysis: analysis,
+            },
+          });
+          return;
+        }
+      } catch (_) { /* fall through to plain quote form */ }
+    }
+    // No analysis — just open the regular new quote form
+    navigate(`/quotes?new=1&customer_name=${encodeURIComponent(lead.first_name + " " + lead.last_name)}&lead_id=${lead.id}`);
+  };
+
   const filtered = leads.filter((l) => {
     const q = search.toLowerCase();
     return !q || `${l.first_name} ${l.last_name} ${l.email} ${l.address}`.toLowerCase().includes(q);
@@ -174,7 +202,7 @@ Address: ${lead.address || "Not provided"}`,
                     <DropdownMenuItem onClick={() => convertToCustomer(lead)} className="gap-2">
                       <UserCheck className="w-4 h-4" />Convert to Customer
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate(`/quotes?new=1&customer_name=${encodeURIComponent(lead.first_name + ' ' + lead.last_name)}&lead_id=${lead.id}`)} className="gap-2">
+                    <DropdownMenuItem onClick={() => handleCreateQuote(lead)} className="gap-2">
                       <FileText className="w-4 h-4" />Create Quote
                     </DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(lead.id)}>Delete</DropdownMenuItem>

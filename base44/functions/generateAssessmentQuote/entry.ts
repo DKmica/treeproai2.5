@@ -160,10 +160,10 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { assessment_text, customer_name, customer_id, lead_id, ai_analysis_id, service_type } = await req.json();
+    const { assessment_text, customer_name, customer_id, lead_id, ai_analysis_id, service_type, structured_analysis } = await req.json();
 
-    if (!assessment_text) {
-      return Response.json({ error: 'assessment_text is required' }, { status: 400 });
+    if (!assessment_text && !structured_analysis) {
+      return Response.json({ error: 'assessment_text or structured_analysis is required' }, { status: 400 });
     }
 
     // Load CompanySettings for pricing
@@ -171,44 +171,73 @@ Deno.serve(async (req) => {
     const s = settingsArr[0] || {};
     const expiryDays = s.quote_expiration_days || 30;
 
-    // Step 1: AI extraction of structured tree data
-    const extracted = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `Extract tree assessment details from this conversation/assessment text. 
+    let extracted;
+
+    // If we already have structured analysis from the public estimate AI, use it directly
+    if (structured_analysis && (structured_analysis.estimated_height_ft_high || structured_analysis.detected_species)) {
+      const avgHeight = ((structured_analysis.estimated_height_ft_low || 0) + (structured_analysis.estimated_height_ft_high || 0)) / 2 || null;
+      const avgDiameter = ((structured_analysis.estimated_dbh_inches_low || 0) + (structured_analysis.estimated_dbh_inches_high || 0)) / 2 || null;
+      const service = structured_analysis.recommended_service || 
+        (structured_analysis.risk_level === 'extreme' || structured_analysis.risk_level === 'high' ? 'removal' : 'removal');
+      extracted = {
+        trees: [{
+          species: structured_analysis.detected_species || 'Unknown',
+          height_ft: avgHeight,
+          diameter_in: avgDiameter,
+          condition: structured_analysis.condition_summary?.split(' ')[0] || 'fair',
+          risk_level: structured_analysis.risk_level || 'moderate',
+          recommended_service: service,
+          needs_crane: structured_analysis.crane_required || structured_analysis.crane_likely || false,
+          needs_stump_grinding: structured_analysis.stump_grinding_likely || false,
+          hazards: structured_analysis.hazards_detected || '',
+          location_notes: structured_analysis.access_difficulty || '',
+        }],
+        urgency: structured_analysis.urgency_level || 'normal',
+        overall_notes: structured_analysis.ai_reasoning_summary || structured_analysis.condition_summary || '',
+        customer_name_from_chat: customer_name || '',
+        address_from_chat: '',
+        scope_summary: structured_analysis.recommended_service || 'Tree removal',
+      };
+    } else {
+      // Step 1: AI extraction of structured tree data from text
+      extracted = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: `Extract tree assessment details from this conversation/assessment text. 
 If multiple trees are mentioned, extract data for each one.
 
 Assessment text:
-${assessment_text}
+${(assessment_text || '').slice(0, 4000)}
 
 Extract the following for EACH tree mentioned:`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          trees: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                species: { type: "string" },
-                height_ft: { type: "number" },
-                diameter_in: { type: "number" },
-                condition: { type: "string", enum: ["excellent", "good", "fair", "poor", "dead"] },
-                risk_level: { type: "string", enum: ["low", "moderate", "high", "extreme"] },
-                recommended_service: { type: "string", enum: ["removal", "trimming", "pruning", "stump_grinding", "emergency_removal"] },
-                needs_crane: { type: "boolean" },
-                needs_stump_grinding: { type: "boolean" },
-                hazards: { type: "string" },
-                location_notes: { type: "string" }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            trees: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  species: { type: "string" },
+                  height_ft: { type: "number" },
+                  diameter_in: { type: "number" },
+                  condition: { type: "string", enum: ["excellent", "good", "fair", "poor", "dead"] },
+                  risk_level: { type: "string", enum: ["low", "moderate", "high", "extreme"] },
+                  recommended_service: { type: "string", enum: ["removal", "trimming", "pruning", "stump_grinding", "emergency_removal"] },
+                  needs_crane: { type: "boolean" },
+                  needs_stump_grinding: { type: "boolean" },
+                  hazards: { type: "string" },
+                  location_notes: { type: "string" }
+                }
               }
-            }
-          },
-          urgency: { type: "string", enum: ["low", "normal", "high", "emergency"] },
-          overall_notes: { type: "string" },
-          customer_name_from_chat: { type: "string" },
-          address_from_chat: { type: "string" },
-          scope_summary: { type: "string" }
+            },
+            urgency: { type: "string", enum: ["low", "normal", "high", "emergency"] },
+            overall_notes: { type: "string" },
+            customer_name_from_chat: { type: "string" },
+            address_from_chat: { type: "string" },
+            scope_summary: { type: "string" }
+          }
         }
-      }
-    });
+      });
+    }
 
     const trees = extracted.trees || [];
     let lineItems = [];
@@ -262,13 +291,16 @@ Assessment: ${assessment_text.slice(0, 2000)}`,
 
     const validUntil = new Date(Date.now() + expiryDays * 86400000).toISOString().split('T')[0];
 
+    // Resolve ai_analysis_id from structured_analysis if not explicitly passed
+    const resolvedAnalysisId = ai_analysis_id || structured_analysis?.id || '';
+
     // Create Quote
     const quote = await base44.asServiceRole.entities.Quote.create({
       quote_number: quoteNumber,
       customer_id: customer_id || '',
       customer_name: resolvedCustomerName,
       lead_id: lead_id || '',
-      ai_analysis_id: ai_analysis_id || '',
+      ai_analysis_id: resolvedAnalysisId,
       status: 'draft',
       line_items: lineItems,
       subtotal: totalAmount,
@@ -304,8 +336,8 @@ Assessment: ${assessment_text.slice(0, 2000)}`,
     });
 
     // Update AIAnalysisRecord if linked
-    if (ai_analysis_id) {
-      await base44.asServiceRole.entities.AIAnalysisRecord.update(ai_analysis_id, { quote_id: quote.id }).catch(() => {});
+    if (resolvedAnalysisId) {
+      await base44.asServiceRole.entities.AIAnalysisRecord.update(resolvedAnalysisId, { quote_id: quote.id }).catch(() => {});
     }
 
     return Response.json({

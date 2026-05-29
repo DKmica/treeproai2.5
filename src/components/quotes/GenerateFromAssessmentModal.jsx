@@ -8,13 +8,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sparkles, Loader2, CheckCircle2, TreePine, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
-export default function GenerateFromAssessmentModal({ open, onOpenChange, customers = [], onQuoteCreated, prefillText = "" }) {
+export default function GenerateFromAssessmentModal({ open, onOpenChange, customers = [], onQuoteCreated, prefillText = "", prefillCustomerName = "", prefillStructuredAnalysis = null }) {
   const [assessmentText, setAssessmentText] = useState("");
   const [customerId, setCustomerId] = useState("");
 
   useEffect(() => {
     if (prefillText) setAssessmentText(prefillText);
   }, [prefillText]);
+
+  useEffect(() => {
+    if (prefillCustomerName && customers.length > 0) {
+      const match = customers.find((c) =>
+        `${c.first_name} ${c.last_name}`.toLowerCase() === prefillCustomerName.toLowerCase()
+      );
+      if (match) setCustomerId(match.id);
+    }
+  }, [prefillCustomerName, customers]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -31,6 +40,8 @@ export default function GenerateFromAssessmentModal({ open, onOpenChange, custom
       assessment_text: assessmentText,
       customer_id: customerId || undefined,
       customer_name: customer ? `${customer.first_name} ${customer.last_name}` : undefined,
+      // Pass pre-computed structured analysis from the public estimate if available
+      structured_analysis: prefillStructuredAnalysis || undefined,
     });
 
     setLoading(false);

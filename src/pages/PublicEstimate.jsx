@@ -143,7 +143,14 @@ function LeadCaptureForm({ assessmentText, photoUrls, onLeadCreated, company, st
       if (structuredAssessment && typeof structuredAssessment === "object") {
         Object.assign(analysisData, structuredAssessment);
       }
-      await base44.entities.AIAnalysisRecord.create(analysisData);
+      const analysisRecord = await base44.entities.AIAnalysisRecord.create(analysisData);
+
+      // Link the analysis record back to the lead so staff can pull it when creating a quote
+      if (leadId && analysisRecord?.id) {
+        await base44.asServiceRole?.entities?.Lead?.update?.(leadId, { ai_analysis_id: analysisRecord.id }).catch(() =>
+          base44.entities.Lead.update(leadId, { ai_analysis_id: analysisRecord.id }).catch(() => {})
+        );
+      }
       await base44.entities.ActivityLog.create({
         related_type: "Lead",
         related_id: leadId || "",

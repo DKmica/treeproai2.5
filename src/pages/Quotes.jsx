@@ -35,11 +35,15 @@ export default function Quotes() {
   const [generating, setGenerating] = useState(false);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [prefillAssessmentText, setPrefillAssessmentText] = useState("");
+  const [prefillCustomerName, setPrefillCustomerName] = useState("");
+  const [prefillStructuredAnalysis, setPrefillStructuredAnalysis] = useState(null);
   const location = useLocation();
 
   useEffect(() => {
     if (location.state?.autoOpenAssessment && location.state?.assessmentText) {
       setPrefillAssessmentText(location.state.assessmentText);
+      setPrefillCustomerName(location.state.prefillCustomerName || "");
+      setPrefillStructuredAnalysis(location.state.structuredAnalysis || null);
       setShowAssessmentModal(true);
       window.history.replaceState({}, "");
     }
@@ -175,9 +179,11 @@ Include common tree services like trimming, removal, stump grinding. Generate re
       {editing && <QuoteForm open={!!editing} onOpenChange={() => setEditing(null)} customers={customers} initialData={editing} onSubmit={(d) => updateMutation.mutate({ id: editing.id, data: d })} />}
       <GenerateFromAssessmentModal
         open={showAssessmentModal}
-        onOpenChange={(v) => { setShowAssessmentModal(v); if (!v) setPrefillAssessmentText(""); }}
+        onOpenChange={(v) => { setShowAssessmentModal(v); if (!v) { setPrefillAssessmentText(""); setPrefillCustomerName(""); setPrefillStructuredAnalysis(null); } }}
         customers={customers}
         prefillText={prefillAssessmentText}
+        prefillCustomerName={prefillCustomerName}
+        prefillStructuredAnalysis={prefillStructuredAnalysis}
         onQuoteCreated={() => queryClient.invalidateQueries({ queryKey: ["quotes"] })}
       />
     </div>
