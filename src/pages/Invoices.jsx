@@ -398,12 +398,29 @@ export default function Invoices() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-right">
-                      <p className="font-bold">${(inv.total || 0).toLocaleString()}</p>
-                      {inv.balance_due > 0 && inv.status !== "paid" && (
-                        <p className="text-xs text-muted-foreground">Due: ${inv.balance_due.toLocaleString()}</p>
-                      )}
-                    </div>
+                   <div className="text-right min-w-[90px]">
+                     <p className="font-bold">${(inv.total || 0).toLocaleString()}</p>
+                     {inv.status === "paid" ? (
+                       <p className="text-xs text-green-600 font-medium">Paid in full</p>
+                     ) : inv.status === "partially_paid" ? (
+                       <>
+                         <p className="text-xs text-yellow-600 font-medium">
+                           ${(inv.amount_paid || 0).toLocaleString()} paid
+                         </p>
+                         <p className="text-xs text-muted-foreground">
+                           ${(inv.balance_due || 0).toLocaleString()} due
+                         </p>
+                         <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
+                           <div
+                             className="bg-yellow-500 h-1 rounded-full"
+                             style={{ width: `${Math.min(((inv.amount_paid || 0) / (inv.total || 1)) * 100, 100)}%` }}
+                           />
+                         </div>
+                       </>
+                     ) : inv.balance_due > 0 ? (
+                       <p className="text-xs text-muted-foreground">${inv.balance_due.toLocaleString()} due</p>
+                     ) : null}
+                   </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
