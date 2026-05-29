@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { convertQuoteToJob } from "@/lib/treeproWorkflow";
 
 export default function CustomerPortal() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -65,23 +66,21 @@ export default function CustomerPortal() {
     setSubmitting(true);
     try {
       if (type === "approved") {
+        // First mark approved with timestamp
         await base44.entities.Quote.update(quote.id, {
           status: "approved",
           approved_at: new Date().toISOString(),
         });
         await base44.entities.CustomerPortalSession.update(session.id, { status: "used", action_taken: "approved" });
-        await base44.entities.Notification.create({
-          type: "quote_approved",
-          title: `Quote approved by ${customer?.first_name || "customer"}`,
-          message: `Quote for ${quote.customer_name} has been approved via the customer portal.`,
-          read: false,
-        });
         await base44.entities.ActivityLog.create({
           related_type: "Quote",
           related_id: quote.id,
           actor: customer?.first_name ? `${customer.first_name} ${customer.last_name}` : "Customer",
           action: "Quote approved via customer portal",
         });
+        // Auto-create job from approved quote
+        const approvedQuote = { ...quote, status: "approved" };
+        await convertQuoteToJob(approvedQuote, customer, customer?.first_name ? `${customer.first_name} ${customer.last_name}` : "Customer (portal)");
         setAction("approved");
       } else if (type === "rejected") {
         await base44.entities.Quote.update(quote.id, {

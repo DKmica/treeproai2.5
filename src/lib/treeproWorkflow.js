@@ -68,6 +68,57 @@ export async function createNotification({ type = "general", title, message, rel
   });
 }
 
+// ── Quote → Job Auto-Conversion ───────────────────────────────────────────────
+
+/**
+ * Creates a Job from an approved Quote and links them bidirectionally.
+ * Marks the quote as converted_to_job and stores job_id on the quote.
+ * Returns the created Job record.
+ */
+export async function convertQuoteToJob(quote, customer = null, actor = "staff") {
+  const riskLevel = quote.risk_level;
+  let priority = "normal";
+  if (riskLevel === "extreme") priority = "emergency";
+  else if (riskLevel === "high" || quote.crane_required) priority = "high";
+
+  const address = quote.customer_address || customer?.address || "";
+
+  const job = await base44.entities.Job.create({
+    customer_id: quote.customer_id,
+    customer_name: quote.customer_name,
+    customer_phone: quote.customer_phone || customer?.phone || "",
+    customer_email: quote.customer_email || customer?.email || "",
+    customer_address: address,
+    address,
+    quote_id: quote.id,
+    ai_analysis_id: quote.ai_analysis_id || "",
+    status: "unscheduled",
+    priority,
+    description: quote.scope_of_work || quote.notes || "From approved quote",
+    scope_of_work: quote.scope_of_work || "",
+    total_cost: quote.total_amount || 0,
+    line_items: quote.line_items || [],
+    risk_level: riskLevel || undefined,
+    access_notes: quote.access_notes || "",
+    crane_required: quote.crane_required || false,
+    estimated_duration_hours: quote.estimated_duration_hours || 4,
+    required_crew_size: quote.required_crew_size || 2,
+    notes: `Auto-created from approved quote #${quote.quote_number || quote.id.slice(0, 8)}`,
+  });
+
+  // Link quote → job bidirectionally
+  await base44.entities.Quote.update(quote.id, {
+    status: "converted_to_job",
+    job_id: job.id,
+  });
+
+  await logActivity({ relatedType: "Job", relatedId: job.id, actor, action: `Job auto-created from approved quote #${quote.quote_number || quote.id.slice(0, 8)}`, notes: quote.customer_name });
+  await logAudit({ actorName: actor, action: "quote_converted_to_job", entityType: "Job", entityId: job.id, newValue: { quote_id: quote.id, customer: quote.customer_name, total: quote.total_amount } });
+  await createNotification({ type: "job_assigned", title: `New job created: ${quote.customer_name}`, message: `Quote #${quote.quote_number || quote.id.slice(0, 8)} approved — job is ready to schedule.`, relatedType: "Job", relatedId: job.id });
+
+  return job;
+}
+
 // ── Portal Token Generation ───────────────────────────────────────────────────
 
 /**

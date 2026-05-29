@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import {
   ArrowLeft, CheckCircle2, XCircle, Briefcase, Send, DollarSign, Clock, Loader2, Plus, Trash2, Copy, User
 } from "lucide-react";
+import { convertQuoteToJob } from "@/lib/treeproWorkflow";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -156,15 +157,23 @@ export default function QuoteDetail() {
     qc.invalidateQueries({ queryKey: ["quote_versions", id] });
   };
 
-  const updateStatus = (status) => {
+  const updateStatus = async (status) => {
     const data = { status };
     if (status === "approved") data.approved_at = new Date().toISOString();
     if (status === "rejected") data.rejected_at = new Date().toISOString();
     if (status === "sent") data.sent_at = new Date().toISOString();
-    updateMutation.mutate(data);
+    await updateMutation.mutateAsync(data);
     if (status === "approved") {
-      base44.entities.Notification.create({ type: "quote_approved", title: `Quote approved for ${quote.customer_name}`, message: `Quote #${quote.quote_number || id.slice(0, 8)} is ready to convert to a job.`, read: false });
       logAudit({ actorName: "staff", action: "quote_approved_by_staff", entityType: "Quote", entityId: id, newValue: { status: "approved" } });
+      // Auto-create job and navigate to jobs
+      try {
+        const approvedQuote = { ...quote, ...data };
+        await convertQuoteToJob(approvedQuote, customer, "staff");
+        toast.success("Quote approved — job created and ready to schedule!");
+        navigate("/jobs");
+      } catch {
+        toast.error("Quote approved but job creation failed. Use 'Convert to Job' manually.");
+      }
     } else if (status === "rejected") {
       logAudit({ actorName: "staff", action: "quote_rejected_by_staff", entityType: "Quote", entityId: id, newValue: { status: "rejected" } });
     }
@@ -345,8 +354,13 @@ export default function QuoteDetail() {
                 <Button variant="outline" onClick={() => updateStatus("rejected")} className="gap-1.5 text-destructive border-destructive"><XCircle className="w-4 h-4" /> Reject</Button>
               </>
             )}
-            {quote.status === "approved" && (
+            {quote.status === "approved" && !quote.job_id && (
               <Button onClick={() => setShowConvertDialog(true)} className="gap-1.5 bg-primary"><Briefcase className="w-4 h-4" /> Convert to Job</Button>
+            )}
+            {quote.job_id && (
+              <Button variant="outline" onClick={() => navigate("/jobs")} className="gap-1.5 text-green-700 border-green-300 bg-green-50 hover:bg-green-100">
+                <CheckCircle2 className="w-4 h-4" /> Job Created — View Jobs
+              </Button>
             )}
             <Button variant="outline" onClick={generatePortalLink} className="gap-1.5"><Copy className="w-4 h-4" /> Copy Approval Link</Button>
           </div>

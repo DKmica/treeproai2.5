@@ -38,6 +38,10 @@
     "property_id": {
       "type": "string"
     },
+    "job_id": {
+      "type": "string",
+      "description": "ID of the Job created when this quote was approved"
+    },
     "status": {
       "type": "string",
       "enum": [
