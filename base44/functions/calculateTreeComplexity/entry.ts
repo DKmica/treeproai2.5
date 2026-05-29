@@ -60,9 +60,12 @@ Deno.serve(async (req) => {
 
     // Height scoring
     const avgHeight = (estimated_height_ft_low + estimated_height_ft_high) / 2;
-    if (avgHeight >= 70) {
+    if (avgHeight >= 85) {
+      score += 28;
+      factors.push("Monster tree (85+ ft): +28");
+    } else if (avgHeight >= 70) {
       score += 20;
-      factors.push("Very large tree (70+ ft): +20");
+      factors.push("Very large tree (70-85 ft): +20");
     } else if (avgHeight >= 50) {
       score += 15;
       factors.push("Large tree (50-70 ft): +15");
@@ -73,9 +76,12 @@ Deno.serve(async (req) => {
 
     // DBH scoring
     const avgDBH = (estimated_dbh_inches_low + estimated_dbh_inches_high) / 2;
-    if (avgDBH >= 36) {
+    if (avgDBH >= 48) {
+      score += 30;
+      factors.push("Monster diameter (48\"+ DBH): +30");
+    } else if (avgDBH >= 36) {
       score += 20;
-      factors.push("Very large diameter (36\"+ DBH): +20");
+      factors.push("Very large diameter (36-48\" DBH): +20");
     } else if (avgDBH >= 24) {
       score += 12;
       factors.push("Large diameter (24-36\" DBH): +12");
@@ -164,30 +170,38 @@ Deno.serve(async (req) => {
     let pricing_floor = settings.minimum_job_price || 150;
     let recommended_range_width_percent = 40;
 
+    const minCranePrice = settings.minimum_crane_removal_price || 14000;
+    const minExtremePrice = settings.minimum_extreme_removal_price || 11000;
+    const minHighRiskPrice = settings.minimum_high_risk_removal_price || 8500;
+    const minLargePrice = settings.minimum_large_removal_price || 5500;
+
     if (score >= 75) {
       complexity_tier = "extreme";
       recommended_range_width_percent = 20;
       if (crane_required) {
-        pricing_floor = settings.minimum_crane_removal_price || 10500;
+        pricing_floor = minCranePrice;
+      } else if (crane_likely) {
+        // Crane likely but not confirmed — floor at crane minimum
+        pricing_floor = minCranePrice;
       } else {
-        pricing_floor = settings.minimum_extreme_removal_price || 8500;
+        pricing_floor = minExtremePrice;
       }
     } else if (score >= 50) {
       complexity_tier = "high";
       recommended_range_width_percent = 25;
-      if (crane_likely) {
-        pricing_floor = settings.minimum_crane_removal_price || 10500;
+      if (crane_likely || crane_required) {
+        pricing_floor = minCranePrice;
       } else {
-        pricing_floor = settings.minimum_high_risk_removal_price || 6500;
+        pricing_floor = minHighRiskPrice;
       }
     } else if (score >= 25) {
       complexity_tier = "moderate";
       recommended_range_width_percent = 30;
-      pricing_floor = settings.minimum_large_removal_price || 4500;
+      pricing_floor = minLargePrice;
     } else {
       complexity_tier = "low";
       recommended_range_width_percent = 35;
-      pricing_floor = settings.minimum_job_price || 150;
+      pricing_floor = settings.minimum_job_price || 500;
     }
 
     // Build explanation

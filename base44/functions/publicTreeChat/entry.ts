@@ -77,7 +77,7 @@ SPECIES & COMPLEXITY ADJUSTMENTS:
 === EXAMPLE: 70-80 ft Oak Between Two Houses ===
 If you encounter this profile:
 - 70-80 ft tall oak/pin oak
-- 36-48"+ DBH (dense hardwood)
+- 36-48" DBH (dense hardwood)
 - Between two houses, canopy over roofs
 - Limited drop zone
 - Driveway access good
@@ -90,12 +90,31 @@ Optional Stump Grinding (+$${Math.round(stumpBase + stumpPerInch * 42)}-$${Math.
 Total estimate: $${minExtreme + Math.round(stumpBase + stumpPerInch * 42)}-$${Math.round((minExtreme * 1.25) + (stumpBase + stumpPerInch * 48))} with stump, without crane
 Or: $${minCrane + Math.round(stumpBase + stumpPerInch * 42)}-$${Math.round((minCrane * 1.25) + (stumpBase + stumpPerInch * 48))} with stump and crane
 
+=== EXAMPLE: 80-90 ft Monster Oak Near House (HIGHEST COMPLEXITY) ===
+If you encounter this profile:
+- 80-90 ft tall pin oak or red oak
+- 48-55"+ DBH (extremely dense, massive wood volume)
+- Canopy over or touching roof/garage
+- Tree between or next to structures
+- Massive cleanup volume (30-50+ cubic yards of wood/debris)
+- Multi-day job, large crew required
+
+This is the MOST expensive job category. Do NOT underestimate.
+Estimate breakdown:
+Without crane (advanced rigging, multi-day): $${Math.round(minCrane * 1.2)}-$${Math.round(minCrane * 1.4)}
+If crane required: $${Math.round(minCrane * 1.5)}-$${Math.round(minCrane * 1.8)}
+Optional stump grinding (48-55" stump): +$${Math.round(stumpBase + stumpPerInch * 50)}-$${Math.round(stumpBase + stumpPerInch * 58)}
+Total without crane: $${Math.round(minCrane * 1.2) + Math.round(stumpBase + stumpPerInch * 50)}-$${Math.round(minCrane * 1.4) + Math.round(stumpBase + stumpPerInch * 58)}
+Total with crane: $${Math.round(minCrane * 1.5) + Math.round(stumpBase + stumpPerInch * 50)}-$${Math.round(minCrane * 1.8) + Math.round(stumpBase + stumpPerInch * 58)}
+
 === GENERAL PRICING FRAMEWORK ===
 SMALL REMOVAL (under 25 ft): $${minPrice}-$1200
 MEDIUM REMOVAL (25-50 ft): $1200-$3500
-LARGE REMOVAL (50-70 ft, good access): $${minLargeRemoval}-$6500
+LARGE REMOVAL (50-70 ft, good access): $${minLargeRemoval}-$7000
 HIGH-RISK REMOVAL (structures nearby): minimum $${minHighRisk}
-EXTREME COMPLEXITY (70+ ft, 36"+ DBH, near/over structures): minimum $${minExtreme}, with crane $${minCrane}+
+EXTREME COMPLEXITY (70-85 ft, 36-48" DBH, near/over structures): minimum $${minExtreme}, with crane $${minCrane}+
+MONSTER OAK / MAXIMUM COMPLEXITY (80+ ft, 48"+ DBH, near/over structures): minimum $${Math.round(minCrane * 1.2)}-$${Math.round(minCrane * 1.5)} WITHOUT crane; $${Math.round(minCrane * 1.5)}-$${Math.round(minCrane * 2)} if crane required
+NOTE: A Pin Oak or Red Oak with 48"+ trunk diameter and 80+ ft height sitting near/over a house is one of the most labor-intensive jobs in tree service. These require 2+ days, large crew, and massive wood volume. NEVER price these under $${Math.round(minCrane * 1.2)}.
 
 STUMP GRINDING:
 - Small (under 12"): $${stumpBase}-$${Math.round(stumpBase * 1.5)}
@@ -105,7 +124,7 @@ STUMP GRINDING:
 
 === KEY ASSESSMENT QUESTIONS ===
 1. Tree height? (under 25ft, 25-50ft, 50-70ft, 70-90ft, 90ft+)
-2. Trunk diameter at chest height? (under 12", 12-24", 24-36", 36"+)
+2. Trunk diameter at chest height? (under 12", 12-24", 24-36", 36-48", 48"+)
 3. Species? (oak, elm, maple, pine, other?)
 4. Location? (front yard, back yard, between structures, over roof/driveway?)
 5. Obstacles? (power lines, fences, buildings, limited drop zone?)
