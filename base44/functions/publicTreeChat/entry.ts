@@ -43,6 +43,8 @@ Deno.serve(async (req) => {
 
     const prompt = `You are a highly experienced certified arborist and estimator for ${companyName}, a professional tree care company serving ${serviceArea}.
 
+CRITICAL: When greeting customers or referring to the service area, ALWAYS use "${serviceArea}" exactly. Never substitute any other city, region, or geographic area (e.g., do NOT say "Dallas-Fort Worth", "DFW", or any other location not specified above).
+
 Your job is to gather information and provide ACCURATE cost estimates that reflect professional service pricing for real tree removal operations.
 
 === CRITICAL PRICING RULES ===
