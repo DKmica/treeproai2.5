@@ -5,12 +5,25 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Truck } from "lucide-react";
 
 export default function JobForm({ open, onOpenChange, onSubmit, customers = [], crews = [], initialData }) {
   const [form, setForm] = useState(initialData || {
     customer_id: "", customer_name: "", description: "", address: "",
     scheduled_date: "", crew_id: "", crew_name: "", total_cost: 0, status: "scheduled", notes: "",
+    dump_expense_chips: 0, dump_expense_wood: 0,
   });
+
+  const { data: settingsList = [] } = useQuery({
+    queryKey: ["company_settings"],
+    queryFn: () => base44.entities.CompanySettings.list(),
+    enabled: open,
+  });
+  const settings = settingsList[0] || {};
+  const chipsMin = settings.dump_fee_chips_min || 50;
+  const woodMin = settings.dump_fee_wood_min || 100;
 
   const update = (field, value) => setForm((p) => ({ ...p, [field]: value }));
 
@@ -59,6 +72,43 @@ export default function JobForm({ open, onOpenChange, onSubmit, customers = [], 
             </Select>
           </div>
           <div className="space-y-1.5"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} rows={2} /></div>
+
+          {/* Dump Fee Expense Tracking */}
+          <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
+            <p className="text-xs font-semibold flex items-center gap-1.5 text-muted-foreground uppercase tracking-wider">
+              <Truck className="w-3.5 h-3.5" /> Dump Fee Expenses
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Chips Dump Cost ($)
+                  <span className="text-muted-foreground font-normal ml-1">(est. min ${chipsMin}/load)</span>
+                </Label>
+                <Input
+                  type="number" min="0" step="0.01"
+                  placeholder="0.00"
+                  value={form.dump_expense_chips || ""}
+                  onChange={(e) => update("dump_expense_chips", parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Wood Dump Cost ($)
+                  <span className="text-muted-foreground font-normal ml-1">(est. min ${woodMin}/load)</span>
+                </Label>
+                <Input
+                  type="number" min="0" step="0.01"
+                  placeholder="0.00"
+                  value={form.dump_expense_wood || ""}
+                  onChange={(e) => update("dump_expense_wood", parseFloat(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+            {((form.dump_expense_chips || 0) + (form.dump_expense_wood || 0)) > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Total dump expenses: <span className="font-semibold text-foreground">${((form.dump_expense_chips || 0) + (form.dump_expense_wood || 0)).toFixed(2)}</span>
+              </p>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit">{initialData ? "Update" : "Schedule"} Job</Button>

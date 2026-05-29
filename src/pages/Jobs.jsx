@@ -111,6 +111,11 @@ export default function Jobs() {
                     {j.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{j.address}</span>}
                     {j.crew_name && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{j.crew_name}</span>}
                     {j.total_cost > 0 && <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />${j.total_cost.toLocaleString()}</span>}
+                    {((j.dump_expense_chips || 0) + (j.dump_expense_wood || 0)) > 0 && (
+                      <span className="flex items-center gap-1 text-orange-600">
+                        <Receipt className="w-3 h-3" />Dump: ${((j.dump_expense_chips || 0) + (j.dump_expense_wood || 0)).toLocaleString()}
+                      </span>
+                    )}
                   </div>
                   {/* Prominent Generate Invoice button for completed jobs */}
                   {j.status === "completed" && (
