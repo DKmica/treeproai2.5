@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, TreePine, FileText, Briefcase,
   Wrench, BarChart3, Menu, X, ChevronRight, ScanSearch, TrendingUp,
   HardHat, Settings, Receipt, Bell, CheckSquare, Building2, Shield, Plug,
-  Palette, Globe, Key, Webhook as WebhookIcon, DollarSign
+  Palette, Globe, Key, Webhook as WebhookIcon, DollarSign, ArrowLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -114,6 +114,9 @@ export default function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const { user, logout } = useAuth();
   const isAdmin = user?.role === "admin";
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isHome = location.pathname === "/";
 
   const visibleNavGroups = navGroups.filter(g => !g.adminOnly || isAdmin);
 
@@ -231,6 +234,11 @@ export default function Layout() {
           <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} className="lg:hidden">
             <Menu className="w-5 h-5" />
           </Button>
+          {!isHome && (
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8 shrink-0">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          )}
           <div className="flex items-center gap-2 lg:hidden">
             <img
               src="https://media.base44.com/images/public/6a15950f5b2c54c351adcf3c/28062c759_17594553825842.jpg"
