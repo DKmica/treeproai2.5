@@ -14,6 +14,8 @@ import {
 import { logActivity } from "@/lib/treeproWorkflow";
 import { calculateScenarioPricing } from "@/lib/pricingEngine";
 
+import SalesQuotePresentation from "./SalesQuotePresentation";
+
 const PRICING_DEFAULTS = {
   crewProductionRate: 500,
   chipDumpRate: 120,
@@ -21,7 +23,6 @@ const PRICING_DEFAULTS = {
   oversizedWoodDumpRate: 440,
   maxChipLoads: 2,
 };
-import SalesQuotePresentation from "./SalesQuotePresentation";
 
 // ── Production Hours Input ───────────────────────────────────────────────────
 
@@ -179,24 +180,103 @@ function PriceCalculator({ aiRecord, settings, onApplyPrice }) {
   );
 }
 
-// ── Line Item Presets ────────────────────────────────────────────────────────
+// ── Stump Grinding Calculator ────────────────────────────────────────────────
 
-const LINE_ITEM_PRESETS = [
-  { description: "Tree Removal — full removal with cleanup and haul-away", unit_price: 1500 },
-  { description: "Tree Trimming / Pruning", unit_price: 450 },
-  { description: "Stump Grinding", unit_price: 250 },
-  { description: "Crane / Lift Equipment", unit_price: 1500 },
-  { description: "Bucket Truck", unit_price: 800 },
-  { description: "Emergency Surcharge", unit_price: 500 },
-  { description: "Permit / Utility Coordination", unit_price: 300 },
+const STUMP_TIERS = [
+  { label: '6"–12"',  min: 6,  max: 12, low: 75,  high: 150 },
+  { label: '13"–24"', min: 13, max: 24, low: 150, high: 300 },
+  { label: '25"–36"', min: 25, max: 36, low: 300, high: 500 },
+  { label: '37"–48"', min: 37, max: 48, low: 450, high: 750 },
+  { label: '49"–60"', min: 49, max: 60, low: 650, high: 1000 },
 ];
+
+const STUMP_ADDONS = [
+  { key: "haul_grindings", label: "Haul away grindings", price: 500 },
+  { key: "backfill_seed",  label: "Backfill w/ topsoil + seed & straw", price: 500 },
+  { key: "backfill_sod",   label: "Backfill w/ topsoil + sod", price: 2000 },
+];
+
+function StumpGrindingBuilder({ onAdd }) {
+  const [dbh, setDbh] = useState("");
+  const [useHigh, setUseHigh] = useState(false);
+  const [addons, setAddons] = useState({});
+
+  const dbhNum = parseFloat(dbh) || 0;
+  const tier = dbhNum > 0 ? STUMP_TIERS.find(t => dbhNum >= t.min && dbhNum <= t.max) || (dbhNum > 60 ? { label: '60"+', low: 1000, high: 1500 } : null) : null;
+  const basePrice = tier ? (useHigh ? tier.high : tier.low) : 0;
+  const addonTotal = STUMP_ADDONS.filter(a => addons[a.key]).reduce((s, a) => s + a.price, 0);
+  const totalPrice = basePrice + addonTotal;
+
+  const selectedAddons = STUMP_ADDONS.filter(a => addons[a.key]).map(a => a.label).join("; ");
+
+  const handleAdd = () => {
+    if (!tier) { return; }
+    const desc = `Stump Grinding (${dbhNum}" DBH)${selectedAddons ? " + " + selectedAddons : ""}`;
+    onAdd({ description: desc, quantity: 1, unit_price: totalPrice, total: totalPrice });
+  };
+
+  return (
+    <Card className="p-3 space-y-3 border-green-200 bg-green-50/50">
+      <p className="text-xs font-bold text-green-800">Stump Grinding</p>
+      <div className="space-y-1.5">
+        <label className="text-xs text-muted-foreground">Stump diameter / DBH (inches)</label>
+        <Input
+          type="number"
+          placeholder='e.g. 18"'
+          value={dbh}
+          onChange={e => setDbh(e.target.value)}
+          className="h-9 text-sm"
+        />
+        {tier && (
+          <p className="text-xs text-green-700 font-medium">
+            Tier: {tier.label} → ${tier.low}–${tier.high}
+          </p>
+        )}
+      </div>
+      {tier && (
+        <div className="flex gap-2">
+          <button
+            onClick={() => setUseHigh(false)}
+            className={`flex-1 py-1.5 rounded-lg border text-xs font-medium transition-all ${!useHigh ? "border-green-500 bg-green-100 text-green-800" : "border-border text-muted-foreground"}`}
+          >
+            Low ${tier.low.toLocaleString()}
+          </button>
+          <button
+            onClick={() => setUseHigh(true)}
+            className={`flex-1 py-1.5 rounded-lg border text-xs font-medium transition-all ${useHigh ? "border-green-500 bg-green-100 text-green-800" : "border-border text-muted-foreground"}`}
+          >
+            High ${tier.high.toLocaleString()}
+          </button>
+        </div>
+      )}
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground font-medium">Add-ons</p>
+        {STUMP_ADDONS.map(a => (
+          <button
+            key={a.key}
+            onClick={() => setAddons(p => ({ ...p, [a.key]: !p[a.key] }))}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-all ${addons[a.key] ? "border-green-500 bg-green-100" : "border-border bg-white"}`}
+          >
+            <span>{a.label}</span>
+            <span className="text-muted-foreground">+${a.price.toLocaleString()}</span>
+          </button>
+        ))}
+      </div>
+      {totalPrice > 0 && (
+        <Button size="sm" className="w-full bg-green-700 hover:bg-green-800 gap-1" onClick={handleAdd}>
+          <Plus className="w-3 h-3" /> Add Stump Grinding — ${totalPrice.toLocaleString()}
+        </Button>
+      )}
+    </Card>
+  );
+}
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreated, user }) {
   const [lineItems, setLineItems] = useState(() => {
-    if (!aiRecord) return [{ description: "Tree Removal — full removal with cleanup and haul-away", quantity: 1, unit_price: 1500, total: 1500 }];
-    const price = aiRecord.price_low || 1500;
+    if (!aiRecord) return [];
+    const price = aiRecord.price_low || 0;
     const species = aiRecord.detected_species || "Tree";
     const heightStr = aiRecord.estimated_height_ft_high ? ` (~${aiRecord.estimated_height_ft_high}ft)` : "";
     const items = [
@@ -205,11 +285,9 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
     if (aiRecord.crane_required || aiRecord.crane_likely) {
       items.push({ description: "Crane / Lift Equipment", quantity: 1, unit_price: 1500, total: 1500 });
     }
-    if (aiRecord.stump_grinding_likely) {
-      items.push({ description: "Stump Grinding", quantity: 1, unit_price: 250, total: 250 });
-    }
     return items;
   });
+  const [showStumpBuilder, setShowStumpBuilder] = useState(false);
 
   // Production hours state (pre-filled from AI estimated_hours if available)
   const [productionHours, setProductionHours] = useState(() => {
@@ -232,7 +310,6 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
   const [saving, setSaving] = useState(false);
   const [savedQuote, setSavedQuote] = useState(null);
   const [showPresentation, setShowPresentation] = useState(false);
-  const [showPresets, setShowPresets] = useState(false);
 
   const { data: settings = {} } = useQuery({
     queryKey: ["company_settings"],
@@ -257,10 +334,10 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
     }));
   };
 
-  const addPreset = (preset) => {
-    setLineItems(prev => [...prev, { ...preset, quantity: 1, total: preset.unit_price }]);
-    setShowPresets(false);
-    toast.success(`Added: ${preset.description}`);
+  const addStumpItem = (item) => {
+    setLineItems(prev => [...prev, item]);
+    setShowStumpBuilder(false);
+    toast.success("Stump grinding added");
   };
 
   const applyCalculatedPrice = (low, high) => {
@@ -431,35 +508,11 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Customer Quote Line Items</p>
-              <p className="text-[10px] text-muted-foreground">Customer sees these descriptions — keep them simple and bundled</p>
+              <p className="text-[10px] text-muted-foreground">Customer sees these — keep descriptions clear and simple</p>
             </div>
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowPresets(!showPresets)}>
-              <Plus className="w-3 h-3" /> Add
-            </Button>
           </div>
 
-          {showPresets && (
-            <Card className="mb-2 overflow-hidden">
-              <CardContent className="p-0">
-                {LINE_ITEM_PRESETS.map(preset => (
-                  <button
-                    key={preset.description}
-                    onClick={() => addPreset(preset)}
-                    className="w-full flex items-center justify-between px-3 py-2.5 text-sm hover:bg-muted border-b last:border-0 text-left"
-                  >
-                    <span>{preset.description}</span>
-                    <span className="text-muted-foreground">${preset.unit_price.toLocaleString()}</span>
-                  </button>
-                ))}
-                <button
-                  onClick={() => { setLineItems(p => [...p, { description: "", quantity: 1, unit_price: 0, total: 0 }]); setShowPresets(false); }}
-                  className="w-full px-3 py-2.5 text-sm text-primary hover:bg-muted text-left"
-                >+ Custom line item</button>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="space-y-2">
+          <div className="space-y-2 mb-3">
             {lineItems.map((item, idx) => (
               <Card key={idx} className="p-3">
                 <div className="flex gap-2 items-start">
@@ -467,7 +520,7 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
                     <Input
                       value={item.description}
                       onChange={e => updateItem(idx, "description", e.target.value)}
-                      placeholder="Customer-facing description (e.g. Large oak removal with full cleanup)"
+                      placeholder="Description (e.g. Large oak removal with full cleanup)"
                       className="text-sm h-9"
                     />
                     <div className="flex gap-2">
@@ -492,6 +545,32 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
               </Card>
             ))}
           </div>
+
+          {/* Add buttons */}
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1"
+              onClick={() => setLineItems(p => [...p, { description: "", quantity: 1, unit_price: 0, total: 0 }])}
+            >
+              <Plus className="w-3 h-3" /> Custom Line Item
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1 border-green-400 text-green-700 hover:bg-green-50"
+              onClick={() => setShowStumpBuilder(p => !p)}
+            >
+              🌳 {showStumpBuilder ? "Hide" : "Add"} Stump Grinding
+            </Button>
+          </div>
+
+          {showStumpBuilder && (
+            <div className="mt-3">
+              <StumpGrindingBuilder onAdd={addStumpItem} />
+            </div>
+          )}
         </div>
 
         {/* Discount */}
