@@ -13,6 +13,7 @@
       "enum": [
         "salesperson",
         "crew_leader",
+        "climber",
         "groundman",
         "stump_grinder"
       ],
@@ -24,6 +25,19 @@
     "email": {
       "type": "string"
     },
+    "address": {
+      "type": "string",
+      "description": "Home address"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of birth"
+    },
+    "ssn_last4": {
+      "type": "string",
+      "description": "Last 4 digits of SSN (store only last 4 for security)"
+    },
     "hire_date": {
       "type": "string",
       "format": "date"
@@ -32,13 +46,10 @@
       "type": "string",
       "enum": [
         "active",
-        "inactive"
+        "inactive",
+        "terminated"
       ],
       "default": "active"
-    },
-    "pay_rate": {
-      "type": "number",
-      "description": "Hourly or daily pay rate"
     },
     "pay_type": {
       "type": "string",
@@ -46,9 +57,54 @@
         "hourly",
         "daily",
         "salary",
-        "commission"
+        "commission",
+        "per_stump",
+        "hourly_plus_commission",
+        "daily_plus_commission",
+        "salary_plus_commission"
       ],
-      "default": "hourly"
+      "default": "hourly",
+      "description": "Primary pay structure"
+    },
+    "pay_rate": {
+      "type": "number",
+      "description": "Dollar amount for hourly/daily/salary/per_stump. Ignored for pure commission."
+    },
+    "commission_percent": {
+      "type": "number",
+      "description": "Commission percentage of job total (for salesperson, crew_leader commission component)"
+    },
+    "stump_rates": {
+      "type": "array",
+      "description": "Per-stump pricing by size range (stump_grinder position)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "size_label": {
+            "type": "string",
+            "description": "e.g. Small (0-12 inch), Medium (13-24 inch), Large (25+ inch)"
+          },
+          "min_inches": {
+            "type": "number"
+          },
+          "max_inches": {
+            "type": "number"
+          },
+          "rate": {
+            "type": "number",
+            "description": "Dollar amount per stump of this size"
+          }
+        }
+      }
+    },
+    "can_sell": {
+      "type": "boolean",
+      "default": false,
+      "description": "Crew leaders who can also sell jobs and earn sales commission"
+    },
+    "sales_commission_percent": {
+      "type": "number",
+      "description": "Sales commission % for crew leaders who sell jobs (separate from job commission)"
     },
     "territory": {
       "type": "string",
@@ -57,14 +113,13 @@
     "max_leads": {
       "type": "number",
       "default": 10,
-      "description": "Max concurrent leads (salesperson only)"
+      "description": "Max concurrent leads"
     },
     "specialties": {
       "type": "array",
       "items": {
         "type": "string"
-      },
-      "description": "e.g. emergency, residential, commercial"
+      }
     },
     "notes": {
       "type": "string"

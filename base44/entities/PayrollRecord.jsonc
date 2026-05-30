@@ -1,0 +1,206 @@
+{
+  "name": "PayrollRecord",
+  "type": "object",
+  "properties": {
+    "employee_id": {
+      "type": "string"
+    },
+    "employee_name": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "pay_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "approved",
+        "paid",
+        "voided"
+      ],
+      "default": "draft"
+    },
+    "pay_type": {
+      "type": "string"
+    },
+    "base_hours": {
+      "type": "number",
+      "default": 0,
+      "description": "Hours worked this period"
+    },
+    "base_rate": {
+      "type": "number",
+      "description": "Hourly/daily/salary rate used"
+    },
+    "base_pay": {
+      "type": "number",
+      "default": 0,
+      "description": "Base wage (hours \u00d7 rate or daily \u00d7 days or salary/periods)"
+    },
+    "overtime_hours": {
+      "type": "number",
+      "default": 0
+    },
+    "overtime_pay": {
+      "type": "number",
+      "default": 0
+    },
+    "commission_jobs": {
+      "type": "array",
+      "description": "Jobs contributing commission this period",
+      "items": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "job_total": {
+            "type": "number"
+          },
+          "commission_pct": {
+            "type": "number"
+          },
+          "commission_amount": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "description": "work or sales"
+          }
+        }
+      }
+    },
+    "commission_total": {
+      "type": "number",
+      "default": 0
+    },
+    "sales_commission_total": {
+      "type": "number",
+      "default": 0,
+      "description": "Commission from selling jobs (crew leaders)"
+    },
+    "stumps_logged": {
+      "type": "array",
+      "description": "Stump log entries for stump grinders",
+      "items": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "job_description": {
+            "type": "string"
+          },
+          "size_label": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "rate": {
+            "type": "number"
+          },
+          "subtotal": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "stump_pay_total": {
+      "type": "number",
+      "default": 0
+    },
+    "bonuses": {
+      "type": "number",
+      "default": 0
+    },
+    "deductions": {
+      "type": "number",
+      "default": 0
+    },
+    "gross_pay": {
+      "type": "number",
+      "default": 0
+    },
+    "net_pay": {
+      "type": "number",
+      "default": 0
+    },
+    "tax_withheld": {
+      "type": "number",
+      "default": 0
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "check",
+        "direct_deposit",
+        "cash",
+        "external_provider"
+      ],
+      "default": "check"
+    },
+    "provider": {
+      "type": "string",
+      "description": "e.g. ADP, Gusto, QuickBooks Payroll \u2014 if external"
+    },
+    "provider_run_id": {
+      "type": "string",
+      "description": "External payroll run ID"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "employee_id",
+    "employee_name",
+    "period_start",
+    "period_end"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

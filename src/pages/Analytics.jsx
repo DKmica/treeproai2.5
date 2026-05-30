@@ -34,6 +34,7 @@ export default function Analytics() {
   const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: () => base44.entities.Customer.list() });
   const { data: invoices = [] } = useQuery({ queryKey: ["invoices"], queryFn: () => base44.entities.Invoice.list("-created_date", 500) });
   const { data: payments = [] } = useQuery({ queryKey: ["payments"], queryFn: () => base44.entities.Payment.list("-created_date", 200) });
+  const { data: payrollRecords = [] } = useQuery({ queryKey: ["payroll_records"], queryFn: () => base44.entities.PayrollRecord.list("-created_date", 500) });
 
   const isLoading = loadingLeads || loadingQuotes || loadingJobs;
 
@@ -48,6 +49,19 @@ export default function Analytics() {
 
   const pendingQuoteValue = quotes.filter(q => ["draft", "needs_review", "sent", "viewed"].includes(q.status)).reduce((s, q) => s + (q.total_amount || 0), 0);
   const avgTicket = approvedQuotes.length > 0 ? Math.round(approvedQuotes.reduce((s, q) => s + (q.total_amount || 0), 0) / approvedQuotes.length) : 0;
+
+  // Payroll analytics
+  const paidPayroll = payrollRecords.filter(r => r.status === "paid");
+  const totalPayrollCost = paidPayroll.reduce((s, r) => s + (r.gross_pay || 0), 0);
+  const totalCommissionPaid = paidPayroll.reduce((s, r) => s + (r.commission_total || 0) + (r.sales_commission_total || 0), 0);
+  const totalStumpPay = paidPayroll.reduce((s, r) => s + (r.stump_pay_total || 0), 0);
+  const payrollByPosition = paidPayroll.reduce((acc, r) => {
+    acc[r.position] = (acc[r.position] || 0) + (r.gross_pay || 0);
+    return acc;
+  }, {});
+  const payrollPositionData = Object.entries(payrollByPosition).map(([name, value]) => ({ name, value: Math.round(value) }));
+  // Labor margin: revenue - payroll cost
+  const laborMargin = totalRevenue > 0 ? Math.round(((totalRevenue - totalPayrollCost) / totalRevenue) * 100) : null;
 
   const completedJobs = jobs.filter(j => ["completed", "invoiced", "paid"].includes(j.status)).length;
   const activeJobs = jobs.filter(j => ["scheduled", "dispatched", "in_progress"].includes(j.status)).length;
@@ -131,6 +145,9 @@ export default function Analytics() {
         <StatCard label="Avg Ticket" value={`$${avgTicket.toLocaleString()}`} sub="Per approved quote" icon={DollarSign} />
         <StatCard label="Completed Jobs" value={completedJobs} sub={`${activeJobs} active now`} icon={Briefcase} color="text-green-600" />
         <StatCard label="Total Customers" value={customers.length} sub={`${leads.length} total leads`} icon={Users} />
+        <StatCard label="Total Payroll Paid" value={`$${totalPayrollCost.toLocaleString()}`} sub="Gross wages paid" icon={DollarSign} color="text-orange-600" />
+        <StatCard label="Commission Paid" value={`$${totalCommissionPaid.toLocaleString()}`} sub="Work + sales commission" icon={DollarSign} color="text-purple-600" />
+        {laborMargin !== null && <StatCard label="Labor Margin" value={`${laborMargin}%`} sub="Revenue after payroll" icon={TrendingUp} color={laborMargin > 50 ? "text-green-600" : "text-yellow-600"} />}
       </div>
 
       {/* Charts Row 1 */}
@@ -265,6 +282,50 @@ export default function Analytics() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Payroll breakdown */}
+      {payrollPositionData.length > 0 && (
+        <div className="grid lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Payroll Cost by Position (Paid)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={payrollPositionData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                  <Tooltip formatter={v => `$${v.toLocaleString()}`} />
+                  <Bar dataKey="value" name="Payroll" fill="#f97316" radius={[3,3,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Payroll Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y">
+                {[
+                  { label: "Total Gross Payroll", value: `$${totalPayrollCost.toLocaleString()}` },
+                  { label: "Work Commission", value: `$${paidPayroll.reduce((s,r)=>s+(r.commission_total||0),0).toLocaleString()}` },
+                  { label: "Sales Commission", value: `$${paidPayroll.reduce((s,r)=>s+(r.sales_commission_total||0),0).toLocaleString()}` },
+                  { label: "Stump Grinder Pay", value: `$${totalStumpPay.toLocaleString()}` },
+                  { label: "Total Bonuses", value: `$${paidPayroll.reduce((s,r)=>s+(r.bonuses||0),0).toLocaleString()}` },
+                  laborMargin !== null && { label: "Labor Margin %", value: `${laborMargin}%` },
+                ].filter(Boolean).map(row => (
+                  <div key={row.label} className="flex items-center justify-between py-2.5 text-sm">
+                    <span className="text-muted-foreground">{row.label}</span>
+                    <span className="font-semibold">{row.value}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Summary table */}
       <Card>

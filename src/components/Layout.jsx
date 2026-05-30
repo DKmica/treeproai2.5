@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, TreePine, FileText, Briefcase,
   Wrench, BarChart3, Menu, X, ChevronRight, ScanSearch, TrendingUp,
   HardHat, Settings, Receipt, Bell, CheckSquare, Building2, Shield, Plug,
-  Palette, Globe, Key, Webhook as WebhookIcon
+  Palette, Globe, Key, Webhook as WebhookIcon, DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -38,6 +38,7 @@ const navGroups = [
       { path: "/equipment", label: "Equipment", icon: Wrench },
       { path: "/maintenance", label: "Maintenance", icon: CheckSquare },
       { path: "/invoices", label: "Invoices", icon: Receipt },
+      { path: "/payroll", label: "Payroll", icon: DollarSign },
     ],
   },
   {

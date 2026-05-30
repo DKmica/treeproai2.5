@@ -31,6 +31,7 @@ import EquipmentMaintenance from '@/pages/EquipmentMaintenance';
 import Integrations from '@/pages/Integrations';
 import AuditLogPage from '@/pages/AuditLog';
 import AIInsights from '@/pages/AIInsights';
+import Payroll from '@/pages/Payroll';
 import WhiteLabel from '@/pages/WhiteLabel';
 import WidgetSettings from '@/pages/WidgetSettings';
 import APIKeys from '@/pages/APIKeys';
@@ -85,6 +86,7 @@ const AuthenticatedApp = () => {
         <Route path="/api-keys" element={<APIKeys />} />
         <Route path="/webhooks" element={<Webhooks />} />
         <Route path="/ai-insights" element={<AIInsights />} />
+        <Route path="/payroll" element={<Payroll />} />
       </Route>
       <Route path="/estimate" element={<PublicEstimate />} />
       <Route path="/portal/:token" element={<CustomerPortal />} />
