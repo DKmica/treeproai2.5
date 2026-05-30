@@ -75,8 +75,8 @@ function LineItemsTable({ items = [], editable, onChange }) {
           <Plus className="w-3.5 h-3.5" /> Add Line Item
         </Button>
       )}
-      <div className="border-t pt-2 text-right font-semibold">
-        Total: ${subtotal.toLocaleString()}
+      <div className="border-t pt-2 text-right text-sm text-muted-foreground">
+        Subtotal: ${subtotal.toLocaleString()}
       </div>
     </div>
   );
@@ -179,7 +179,7 @@ export default function QuoteDetail() {
         await convertQuoteToJob(approvedQuote, customer, "staff");
         toast.success("Quote approved — job created and ready to schedule!");
         navigate("/jobs");
-      } catch {
+      } catch (err) {
         toast.error("Quote approved but job creation failed. Use 'Convert to Job' manually.");
       }
     } else if (status === "rejected") {
@@ -221,7 +221,7 @@ export default function QuoteDetail() {
         customer_phone: quote.customer_phone || customer?.phone || "",
         customer_email: quote.customer_email || customer?.email || "",
         customer_address: address,
-        address: address,  // Crew Mode uses job.address for Google Maps
+        address: address,
         quote_id: id,
         ai_analysis_id: quote.ai_analysis_id || "",
         status: "unscheduled",
@@ -239,7 +239,15 @@ export default function QuoteDetail() {
         required_crew_size: quote.required_crew_size || (riskLevel === "extreme" ? 4 : riskLevel === "high" ? 3 : 2),
         notes: `Converted from quote #${quote.quote_number || id.slice(0, 8)}`,
       });
-      await updateMutation.mutateAsync({ status: "converted_to_job" });
+      await updateMutation.mutateAsync({ status: "converted_to_job", job_id: job.id });
+      // Mark lead as won with final value
+      if (quote.lead_id) {
+        await base44.entities.Lead.update(quote.lead_id, {
+          status: "won",
+          estimated_value: quote.total_amount || 0,
+          converted_customer_id: quote.customer_id || "",
+        }).catch(() => {});
+      }
       await logActivity({ relatedType: "Job", relatedId: job.id, actor: "staff", action: `Job created from quote #${quote.quote_number || id.slice(0, 8)}`, notes: quote.customer_name });
       await logAudit({ actorName: "staff", action: "quote_converted_to_job", entityType: "Job", entityId: job.id, newValue: { quote_id: id, customer: quote.customer_name, total: quote.total_amount } });
       await createNotification({ type: "job_assigned", title: `Job created for ${quote.customer_name}`, message: `Quote #${quote.quote_number || id.slice(0, 8)} converted. Job ready to schedule.`, relatedType: "Job", relatedId: job.id });
@@ -311,9 +319,25 @@ export default function QuoteDetail() {
             <LineItemsTable items={quote.line_items || []} />
           )}
 
-          {quote.discount_amount > 0 && (
-            <p className="text-right text-sm text-muted-foreground mt-1">Discount: -${(quote.discount_amount || 0).toLocaleString()}</p>
-          )}
+          {/* Always show final totals from saved quote data */}
+          <div className="mt-3 space-y-1 border-t pt-3 text-sm">
+            {quote.discount_amount > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Discount</span>
+                <span>-${(quote.discount_amount || 0).toLocaleString()}</span>
+              </div>
+            )}
+            {(quote.tax_amount || 0) > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Tax</span>
+                <span>+${(quote.tax_amount || 0).toLocaleString()}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold text-base pt-1">
+              <span>Total</span>
+              <span className="text-primary">${(quote.total_amount || 0).toLocaleString()}</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

@@ -112,6 +112,15 @@ export async function convertQuoteToJob(quote, customer = null, actor = "staff")
     job_id: job.id,
   });
 
+  // Mark associated lead as "won" with the final job value
+  if (quote.lead_id) {
+    await base44.entities.Lead.update(quote.lead_id, {
+      status: "won",
+      estimated_value: quote.total_amount || 0,
+      converted_customer_id: quote.customer_id || "",
+    }).catch(() => {});
+  }
+
   await logActivity({ relatedType: "Job", relatedId: job.id, actor, action: `Job auto-created from approved quote #${quote.quote_number || quote.id.slice(0, 8)}`, notes: quote.customer_name });
   await logAudit({ actorName: actor, action: "quote_converted_to_job", entityType: "Job", entityId: job.id, newValue: { quote_id: quote.id, customer: quote.customer_name, total: quote.total_amount } });
   await createNotification({ type: "job_assigned", title: `New job created: ${quote.customer_name}`, message: `Quote #${quote.quote_number || quote.id.slice(0, 8)} approved — job is ready to schedule.`, relatedType: "Job", relatedId: job.id });

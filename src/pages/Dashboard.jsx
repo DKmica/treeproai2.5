@@ -17,8 +17,8 @@ export default function Dashboard() {
   const { data: jobs = [] } = useQuery({ queryKey: ["jobs"], queryFn: () => base44.entities.Job.list() });
   const { data: invoices = [] } = useQuery({ queryKey: ["invoices"], queryFn: () => base44.entities.Invoice.list() });
 
-  const activeJobs = jobs.filter((j) => j.status === "scheduled" || j.status === "in_progress").length;
-  const totalRevenue = jobs.filter((j) => j.status === "completed").reduce((sum, j) => sum + (j.total_cost || 0), 0);
+  const activeJobs = jobs.filter((j) => ["scheduled", "dispatched", "in_progress"].includes(j.status)).length;
+  const totalRevenue = jobs.filter((j) => ["completed", "invoiced", "paid"].includes(j.status)).reduce((sum, j) => sum + (j.total_cost || 0), 0);
   const pendingQuotes = quotes.filter((q) => q.status === "sent" || q.status === "draft").length;
   const overdueInvoices = invoices.filter(i => i.status === "overdue").length;
   const newLeads = leads.filter(l => l.status === "new").length;

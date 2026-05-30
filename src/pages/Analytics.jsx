@@ -50,6 +50,10 @@ export default function Analytics() {
   const pendingQuoteValue = quotes.filter(q => ["draft", "needs_review", "sent", "viewed"].includes(q.status)).reduce((s, q) => s + (q.total_amount || 0), 0);
   const avgTicket = approvedQuotes.length > 0 ? Math.round(approvedQuotes.reduce((s, q) => s + (q.total_amount || 0), 0) / approvedQuotes.length) : 0;
 
+  // Won revenue from jobs (most accurate — the actual job value)
+  const wonJobRevenue = jobs.filter(j => ["completed", "invoiced", "paid"].includes(j.status)).reduce((s, j) => s + (j.total_cost || 0), 0);
+  const wonLeadsValue = leads.filter(l => l.status === "won").reduce((s, l) => s + (l.estimated_value || 0), 0);
+
   // Payroll analytics
   const paidPayroll = payrollRecords.filter(r => r.status === "paid");
   const totalPayrollCost = paidPayroll.reduce((s, r) => s + (r.gross_pay || 0), 0);
@@ -143,6 +147,7 @@ export default function Analytics() {
         <StatCard label="Pending Quotes" value={`$${pendingQuoteValue.toLocaleString()}`} sub="Open quote pipeline" icon={FileText} />
         <StatCard label="Quote Conversion" value={`${conversionRate}%`} sub={`${approvedQuotes.length} of ${sentQuotes.length} sent`} icon={TrendingUp} color="text-blue-600" />
         <StatCard label="Avg Ticket" value={`$${avgTicket.toLocaleString()}`} sub="Per approved quote" icon={DollarSign} />
+        <StatCard label="Won Revenue" value={`$${wonJobRevenue.toLocaleString()}`} sub={`${wonLeadsValue > 0 ? `$${wonLeadsValue.toLocaleString()} from won leads` : "from completed jobs"}`} icon={DollarSign} color="text-emerald-600" />
         <StatCard label="Completed Jobs" value={completedJobs} sub={`${activeJobs} active now`} icon={Briefcase} color="text-green-600" />
         <StatCard label="Total Customers" value={customers.length} sub={`${leads.length} total leads`} icon={Users} />
         <StatCard label="Total Payroll Paid" value={`$${totalPayrollCost.toLocaleString()}`} sub="Gross wages paid" icon={DollarSign} color="text-orange-600" />

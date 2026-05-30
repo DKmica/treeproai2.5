@@ -410,7 +410,7 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
       status_at_save: "draft",
     });
 
-    await base44.entities.Lead.update(lead.id, { status: "quoted" }).catch(() => {});
+    await base44.entities.Lead.update(lead.id, { status: "quoted", estimated_value: total }).catch(() => {});
 
     await logActivity({
       relatedType: "Quote", relatedId: quote.id,
