@@ -175,6 +175,28 @@ export default function AIAnalysis() {
     queryFn: () => base44.entities.AIAnalysisRecord.list("-created_date"),
   });
 
+  // Load leads to get customer names for records that came from public estimate
+  const { data: leads = [] } = useQuery({
+    queryKey: ["leads_for_analysis"],
+    queryFn: () => base44.entities.Lead.list("-created_date", 200),
+  });
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers_for_analysis"],
+    queryFn: () => base44.entities.Customer.list("-created_date", 200),
+  });
+
+  const getContactName = (record) => {
+    if (record.customer_id) {
+      const c = customers.find(c => c.id === record.customer_id);
+      if (c) return `${c.first_name} ${c.last_name}`;
+    }
+    if (record.lead_id) {
+      const l = leads.find(l => l.id === record.lead_id);
+      if (l) return `${l.first_name} ${l.last_name}`;
+    }
+    return null;
+  };
+
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => base44.entities.AIAnalysisRecord.update(id, data),
     onSuccess: async (_, { id, data }) => {
@@ -188,10 +210,13 @@ export default function AIAnalysis() {
   });
 
   const filtered = records.filter(r => {
+    const contactName = getContactName(r) || "";
     const matchesSearch =
       (r.recommended_service || "").toLowerCase().includes(search.toLowerCase()) ||
       (r.detected_species || "").toLowerCase().includes(search.toLowerCase()) ||
-      (r.condition_summary || "").toLowerCase().includes(search.toLowerCase());
+      (r.condition_summary || "").toLowerCase().includes(search.toLowerCase()) ||
+      contactName.toLowerCase().includes(search.toLowerCase()) ||
+      (r.original_customer_notes || "").toLowerCase().includes(search.toLowerCase());
     const matchesStatus = filterStatus === "all" || r.human_review_status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -205,13 +230,25 @@ export default function AIAnalysis() {
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <ScanSearch className="w-6 h-6 text-primary" /> AI Analysis Records
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">Review and approve AI-generated tree assessments before generating quotes.</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            All incoming public estimate requests land here automatically. Review and build quotes directly from each record.
+          </p>
         </div>
-        {pending > 0 && (
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 gap-1 px-3 py-1.5">
-            <Clock className="w-3.5 h-3.5" /> {pending} Pending Review
-          </Badge>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {pending > 0 && (
+            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 gap-1 px-3 py-1.5">
+              <Clock className="w-3.5 h-3.5" /> {pending} Pending Review
+            </Badge>
+          )}
+          <a
+            href="/estimate"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-primary hover:underline flex items-center gap-1 border border-primary/30 rounded-md px-2.5 py-1.5"
+          >
+            <TreePine className="w-3 h-3" /> View Public Estimate Page ↗
+          </a>
+        </div>
       </div>
 
       {/* Stats */}
@@ -294,6 +331,11 @@ export default function AIAnalysis() {
                             <Badge className="bg-teal-100 text-teal-700 text-xs">Quote created</Badge>
                           )}
                         </div>
+                        {getContactName(record) && (
+                          <p className="text-sm font-medium text-foreground mt-0.5 flex items-center gap-1">
+                            <span className="text-muted-foreground">👤</span> {getContactName(record)}
+                          </p>
+                        )}
                         <div className="flex items-center gap-3 flex-wrap mt-1">
                           {record.detected_species && (
                             <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -336,7 +378,7 @@ export default function AIAnalysis() {
                       <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setReviewing(record)}>
                         <Eye className="w-3.5 h-3.5" />Review
                       </Button>
-                      {(record.human_review_status === "reviewed" || record.human_review_status === "corrected") && !record.quote_id && (
+                      {record.human_review_status !== "rejected" && !record.quote_id && (
                         <Button
                           size="sm"
                           className="gap-1.5 bg-primary"
@@ -354,8 +396,11 @@ export default function AIAnalysis() {
                     </div>
                   </div>
 
-                  {record.condition_summary && (
-                    <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">{record.condition_summary.slice(0, 150)}{record.condition_summary.length > 150 ? "..." : ""}</p>
+                  {(record.condition_summary || record.original_customer_notes) && (
+                    <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                      {(record.condition_summary || record.original_customer_notes || "").slice(0, 180)}
+                      {(record.condition_summary || record.original_customer_notes || "").length > 180 ? "..." : ""}
+                    </p>
                   )}
                 </CardContent>
               </Card>

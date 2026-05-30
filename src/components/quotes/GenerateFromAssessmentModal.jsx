@@ -29,14 +29,34 @@ export default function GenerateFromAssessmentModal({ open, onOpenChange, custom
     enabled: open,
   });
 
+  const { data: leads = [] } = useQuery({
+    queryKey: ["leads_modal"],
+    queryFn: () => base44.entities.Lead.list("-created_date", 200),
+    enabled: open,
+  });
+
+  const getRecordContactName = (record) => {
+    if (record.customer_id) {
+      const c = customers.find(c => c.id === record.customer_id);
+      if (c) return `${c.first_name} ${c.last_name}`;
+    }
+    if (record.lead_id) {
+      const l = leads.find(l => l.id === record.lead_id);
+      if (l) return `${l.first_name} ${l.last_name}`;
+    }
+    return null;
+  };
+
   // Records that don't have a quote yet
-  const availableRecords = analysisRecords.filter(r => !r.quote_id);
+  const availableRecords = analysisRecords.filter(r => !r.quote_id && r.human_review_status !== "rejected");
   const filteredRecords = availableRecords.filter(r => {
     if (!search) return true;
     const s = search.toLowerCase();
+    const name = getRecordContactName(r) || "";
     return (r.recommended_service || "").toLowerCase().includes(s) ||
       (r.detected_species || "").toLowerCase().includes(s) ||
-      (r.original_customer_notes || "").toLowerCase().includes(s);
+      (r.original_customer_notes || "").toLowerCase().includes(s) ||
+      name.toLowerCase().includes(s);
   });
 
   useEffect(() => {
@@ -71,14 +91,21 @@ export default function GenerateFromAssessmentModal({ open, onOpenChange, custom
     const effectiveCustomerId = mode === "pick" ? (selectedRecord?.customer_id || customerId) : customerId;
     const effectiveCustomer = customers.find(c => c.id === effectiveCustomerId);
 
+    // If no customer linked, try to get name from the lead
+    let effectiveCustomerName = effectiveCustomer
+      ? `${effectiveCustomer.first_name} ${effectiveCustomer.last_name}`
+      : customer ? `${customer.first_name} ${customer.last_name}` : undefined;
+    if (!effectiveCustomerName && mode === "pick" && selectedRecord?.lead_id) {
+      const l = leads.find(l => l.id === selectedRecord.lead_id);
+      if (l) effectiveCustomerName = `${l.first_name} ${l.last_name}`;
+    }
+
     const res = await base44.functions.invoke("generateAssessmentQuote", {
       assessment_text: mode === "pick"
         ? (selectedRecord.original_customer_notes || selectedRecord.recommended_service || "AI tree assessment")
         : assessmentText,
       customer_id: effectiveCustomerId || undefined,
-      customer_name: effectiveCustomer
-        ? `${effectiveCustomer.first_name} ${effectiveCustomer.last_name}`
-        : (customer ? `${customer.first_name} ${customer.last_name}` : undefined),
+      customer_name: effectiveCustomerName,
       structured_analysis: mode === "pick"
         ? selectedRecord
         : (prefillStructuredAnalysis || undefined),
@@ -173,7 +200,10 @@ export default function GenerateFromAssessmentModal({ open, onOpenChange, custom
                                 </div>
                               )}
                               <div className="min-w-0">
-                                <p className="font-medium text-sm truncate">{record.recommended_service || "Tree Assessment"}</p>
+                                {getRecordContactName(record) && (
+                                  <p className="font-semibold text-sm text-foreground truncate">{getRecordContactName(record)}</p>
+                                )}
+                                <p className="font-medium text-sm truncate text-muted-foreground">{record.recommended_service || "Tree Assessment"}</p>
                                 {record.detected_species && <p className="text-xs text-muted-foreground">{record.detected_species}</p>}
                                 <p className="text-xs text-muted-foreground">{record.created_date ? format(new Date(record.created_date), "MMM d, yyyy") : ""}</p>
                               </div>
