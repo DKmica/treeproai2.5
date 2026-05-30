@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import AppChatbot from "@/components/AppChatbot";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -273,6 +274,8 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      <AppChatbot user={user} />
     </div>
   );
 }
