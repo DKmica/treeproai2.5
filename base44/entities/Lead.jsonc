@@ -84,6 +84,10 @@
       "type": "string",
       "description": "AI analysis notes"
     },
+    "ai_analysis_id": {
+      "type": "string",
+      "description": "Linked AIAnalysisRecord ID from public estimate"
+    },
     "assigned_to": {
       "type": "string",
       "description": "Salesperson name assigned to this lead"
