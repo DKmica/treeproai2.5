@@ -49,10 +49,10 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Active Leads" value={leads.filter((l) => l.status !== "won" && l.status !== "lost").length} icon={Users} color="blue" />
-        <StatCard title="Pending Quotes" value={pendingQuotes} icon={FileText} color="accent" />
-        <StatCard title="Active Jobs" value={activeJobs} icon={Briefcase} color="primary" />
-        <StatCard title="Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} color="purple" />
+        <StatCard title="Active Leads" value={leads.filter((l) => l.status !== "won" && l.status !== "lost").length} icon={Users} color="blue" onClick={() => navigate("/leads")} />
+        <StatCard title="Pending Quotes" value={pendingQuotes} icon={FileText} color="accent" onClick={() => navigate("/quotes")} />
+        <StatCard title="Active Jobs" value={activeJobs} icon={Briefcase} color="primary" onClick={() => navigate("/jobs")} />
+        <StatCard title="Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} color="purple" onClick={() => navigate("/invoices")} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

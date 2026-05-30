@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-export default function StatCard({ title, value, subtitle, icon: Icon, trend, color = "primary" }) {
+export default function StatCard({ title, value, subtitle, icon: Icon, trend, color = "primary", onClick }) {
   const colorMap = {
     primary: "bg-primary/10 text-primary",
     accent: "bg-accent/10 text-accent-foreground",
@@ -11,7 +11,7 @@ export default function StatCard({ title, value, subtitle, icon: Icon, trend, co
   };
 
   return (
-    <Card className="p-5 hover:shadow-lg transition-shadow duration-300">
+    <Card className={cn("p-5 hover:shadow-lg transition-shadow duration-300", onClick && "cursor-pointer")} onClick={onClick}>
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
