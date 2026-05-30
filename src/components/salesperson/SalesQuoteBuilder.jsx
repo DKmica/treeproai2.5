@@ -12,10 +12,15 @@ import {
   Eye, FileText, ChevronDown, ChevronUp, Info, Clock
 } from "lucide-react";
 import { logActivity } from "@/lib/treeproWorkflow";
-import {
-  calculateProductionPrice, estimateDumpLoads, estimateProductionHours,
-  PRICING_DEFAULTS
-} from "@/lib/pricingEngine";
+import { calculateScenarioPricing } from "@/lib/pricingEngine";
+
+const PRICING_DEFAULTS = {
+  crewProductionRate: 500,
+  chipDumpRate: 120,
+  standardWoodDumpRate: 220,
+  oversizedWoodDumpRate: 440,
+  maxChipLoads: 2,
+};
 import SalesQuotePresentation from "./SalesQuotePresentation";
 
 // ── Production Hours Input ───────────────────────────────────────────────────
@@ -137,59 +142,38 @@ function DumpLoadsInput({ loads, onChange }) {
 
 // ── Price Calculator ─────────────────────────────────────────────────────────
 
-function PriceCalculator({ hours, loads, craneRequired, settings, onApplyPrice }) {
-  const result = calculateProductionPrice({
-    totalProductionHours: hours.totalHours || 0,
-    chipLoads: loads.chipLoads || 0,
-    standardWoodLoads: loads.standardWoodLoads || 0,
-    oversizedWoodLoads: loads.oversizedWoodLoads || 0,
-    craneRequired,
-    urgency: "normal",
-  }, settings);
-
-  const rangeHigh = Math.round(result.finalPrice * 1.05 / 5) * 5;
+function PriceCalculator({ aiRecord, settings, onApplyPrice }) {
+  if (!aiRecord) return null;
+  const pricing = calculateScenarioPricing(aiRecord, settings);
+  const low = pricing.no_crane_price_low;
+  const high = pricing.no_crane_price_high;
+  const mid = Math.round((low + high) / 2 / 50) * 50;
 
   return (
     <Card className="p-3 bg-primary/5 border-primary/20">
-      <p className="text-xs font-bold text-primary mb-2">Price Calculation</p>
+      <p className="text-xs font-bold text-primary mb-2">AI Price Calculation</p>
       <div className="space-y-1 text-xs text-muted-foreground">
         <div className="flex justify-between">
-          <span>Production labor ({hours.totalHours}h × ${result.breakdown?.crewRate || PRICING_DEFAULTS.crewProductionRate}/hr)</span>
-          <span className="font-medium">${result.productionLaborCost.toLocaleString()}</span>
-        </div>
-        {result.chipDumpFees > 0 && (
-          <div className="flex justify-between">
-            <span>Chip dump fees ({result.breakdown?.actualChipLoads} loads)</span>
-            <span>${result.chipDumpFees.toLocaleString()}</span>
-          </div>
-        )}
-        {result.woodDumpFees > 0 && (
-          <div className="flex justify-between">
-            <span>Wood dump fees</span>
-            <span>${result.woodDumpFees.toLocaleString()}</span>
-          </div>
-        )}
-        {result.equipmentCharges > 0 && (
-          <div className="flex justify-between">
-            <span>Equipment (crane)</span>
-            <span>${result.equipmentCharges.toLocaleString()}</span>
-          </div>
-        )}
-        <div className="flex justify-between font-medium border-t pt-1">
-          <span>Job subtotal</span>
-          <span>${result.jobSubtotal.toLocaleString()}</span>
+          <span>Est. hours</span>
+          <span className="font-medium">{pricing.estimated_hours}h</span>
         </div>
         <div className="flex justify-between">
-          <span>× {result.breakdown?.multiplier || 1.20} overhead/profit</span>
-          <span className="font-bold text-primary">${result.finalPrice.toLocaleString()}</span>
+          <span>Chip loads / Log loads</span>
+          <span>{pricing.estimated_chip_loads} / {pricing.estimated_log_loads}</span>
         </div>
+        <div className="flex justify-between font-medium border-t pt-1">
+          <span>No-crane range</span>
+          <span className="text-primary">${low.toLocaleString()} – ${high.toLocaleString()}</span>
+        </div>
+        {(aiRecord.crane_required || aiRecord.crane_likely) && (
+          <div className="flex justify-between">
+            <span>Crane range</span>
+            <span>${pricing.crane_required_price_low.toLocaleString()} – ${pricing.crane_required_price_high.toLocaleString()}</span>
+          </div>
+        )}
       </div>
-      <Button
-        size="sm"
-        className="w-full mt-2 h-8 text-xs"
-        onClick={() => onApplyPrice(result.finalPrice, rangeHigh)}
-      >
-        Apply ${result.finalPrice.toLocaleString()} to quote
+      <Button size="sm" className="w-full mt-2 h-8 text-xs" onClick={() => onApplyPrice(mid, high)}>
+        Apply ${mid.toLocaleString()} (midpoint) to quote
       </Button>
     </Card>
   );
@@ -227,18 +211,17 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
     return items;
   });
 
-  // Production hours state (pre-filled from AI if available)
+  // Production hours state (pre-filled from AI estimated_hours if available)
   const [productionHours, setProductionHours] = useState(() => {
-    if (aiRecord) {
-      return estimateProductionHours(aiRecord) || { totalHours: 0, removalHours: 0, groundChippingHours: 0, logHandlingHours: 0, finalCleanupHours: 0 };
-    }
-    return { totalHours: 0, removalHours: 0, groundChippingHours: 0, logHandlingHours: 0, finalCleanupHours: 0 };
+    const aiHours = aiRecord ? calculateScenarioPricing(aiRecord, {}).estimated_hours : 0;
+    return { totalHours: aiHours || 0, removalHours: 0, groundChippingHours: 0, logHandlingHours: 0, finalCleanupHours: 0 };
   });
 
   // Dump loads state
   const [dumpLoads, setDumpLoads] = useState(() => {
-    if (aiRecord) return estimateDumpLoads(aiRecord) || { chipLoads: 0, standardWoodLoads: 0, oversizedWoodLoads: 0 };
-    return { chipLoads: 0, standardWoodLoads: 0, oversizedWoodLoads: 0 };
+    if (!aiRecord) return { chipLoads: 0, standardWoodLoads: 0, oversizedWoodLoads: 0 };
+    const p = calculateScenarioPricing(aiRecord, {});
+    return { chipLoads: p.estimated_chip_loads || 0, standardWoodLoads: 0, oversizedWoodLoads: p.estimated_log_loads || 0 };
   });
 
   const [craneRequired, setCraneRequired] = useState(aiRecord?.crane_required || false);
@@ -435,9 +418,7 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
           {showCalc && (
             <div className="mt-2">
               <PriceCalculator
-                hours={productionHours}
-                loads={dumpLoads}
-                craneRequired={craneRequired}
+                aiRecord={aiRecord}
                 settings={settings}
                 onApplyPrice={applyCalculatedPrice}
               />
