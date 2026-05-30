@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  ArrowLeft, CheckCircle2, XCircle, Briefcase, Send, DollarSign, Clock, Loader2, Plus, Trash2, Copy, User
+  ArrowLeft, CheckCircle2, XCircle, Briefcase, Send, DollarSign, Clock, Loader2, Plus, Trash2, Copy, User,
+  Sparkles, TreePine, AlertTriangle, ShieldAlert, Ruler, Bug
 } from "lucide-react";
 import { convertQuoteToJob } from "@/lib/treeproWorkflow";
 import { toast } from "sonner";
@@ -108,6 +109,13 @@ export default function QuoteDetail() {
     queryKey: ["customer", quote?.customer_id],
     queryFn: () => base44.entities.Customer.filter({ id: quote.customer_id }),
     enabled: !!quote?.customer_id,
+    select: arr => arr[0],
+  });
+
+  const { data: aiRecord } = useQuery({
+    queryKey: ["ai_analysis_record", quote?.ai_analysis_id],
+    queryFn: () => base44.entities.AIAnalysisRecord.filter({ id: quote.ai_analysis_id }),
+    enabled: !!quote?.ai_analysis_id,
     select: arr => arr[0],
   });
 
@@ -316,6 +324,147 @@ export default function QuoteDetail() {
             {quote.scope_of_work && <div><p className="font-medium text-muted-foreground text-xs mb-1">SCOPE OF WORK</p><p>{quote.scope_of_work}</p></div>}
             {quote.notes && <div><p className="font-medium text-muted-foreground text-xs mb-1">NOTES</p><p>{quote.notes}</p></div>}
             {quote.ai_analysis && <div><p className="font-medium text-muted-foreground text-xs mb-1">AI ANALYSIS</p><p className="text-muted-foreground">{quote.ai_analysis}</p></div>}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Analysis Panel */}
+      {aiRecord && (
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" /> AI Assessment Data
+              {aiRecord.confidence_score != null && (
+                <Badge className={`ml-auto text-xs ${aiRecord.confidence_score >= 70 ? "bg-green-100 text-green-700" : aiRecord.confidence_score >= 50 ? "bg-yellow-100 text-yellow-700" : "bg-orange-100 text-orange-700"}`}>
+                  {aiRecord.confidence_score}% confidence
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            {/* Species + Dimensions row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {aiRecord.detected_species && (
+                <div className="bg-muted/50 rounded-lg p-2.5">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><TreePine className="w-3 h-3" /> Species</p>
+                  <p className="font-semibold text-sm">{aiRecord.detected_species}</p>
+                  {aiRecord.species_confidence != null && <p className="text-xs text-muted-foreground">{aiRecord.species_confidence}% confident</p>}
+                </div>
+              )}
+              {(aiRecord.estimated_height_ft_low || aiRecord.estimated_height_ft_high) && (
+                <div className="bg-muted/50 rounded-lg p-2.5">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><Ruler className="w-3 h-3" /> Height</p>
+                  <p className="font-semibold text-sm">
+                    {aiRecord.estimated_height_ft_low && aiRecord.estimated_height_ft_high
+                      ? `${aiRecord.estimated_height_ft_low}–${aiRecord.estimated_height_ft_high} ft`
+                      : `${aiRecord.estimated_height_ft_low || aiRecord.estimated_height_ft_high} ft`}
+                  </p>
+                </div>
+              )}
+              {(aiRecord.estimated_dbh_inches_low || aiRecord.estimated_dbh_inches_high) && (
+                <div className="bg-muted/50 rounded-lg p-2.5">
+                  <p className="text-xs text-muted-foreground mb-1">Trunk Diameter</p>
+                  <p className="font-semibold text-sm">
+                    {aiRecord.estimated_dbh_inches_low && aiRecord.estimated_dbh_inches_high
+                      ? `${aiRecord.estimated_dbh_inches_low}–${aiRecord.estimated_dbh_inches_high}"`
+                      : `${aiRecord.estimated_dbh_inches_low || aiRecord.estimated_dbh_inches_high}"`}
+                  </p>
+                </div>
+              )}
+              {aiRecord.risk_level && (
+                <div className={`rounded-lg p-2.5 ${aiRecord.risk_level === "extreme" ? "bg-red-50" : aiRecord.risk_level === "high" ? "bg-orange-50" : aiRecord.risk_level === "moderate" ? "bg-yellow-50" : "bg-green-50"}`}>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1"><ShieldAlert className="w-3 h-3" /> Risk</p>
+                  <p className={`font-semibold text-sm capitalize ${aiRecord.risk_level === "extreme" ? "text-red-700" : aiRecord.risk_level === "high" ? "text-orange-700" : aiRecord.risk_level === "moderate" ? "text-yellow-700" : "text-green-700"}`}>
+                    {aiRecord.risk_level}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* AI Price Range vs Quote Total */}
+            {(aiRecord.price_low || aiRecord.price_high) && (
+              <div className="flex items-center gap-3 bg-primary/5 border border-primary/15 rounded-lg px-3 py-2.5">
+                <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground mb-0.5">AI Estimated Range</p>
+                  <p className="font-bold text-base">${(aiRecord.price_low || 0).toLocaleString()} – ${(aiRecord.price_high || 0).toLocaleString()}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-xs text-muted-foreground mb-0.5">This Quote</p>
+                  <p className="font-bold text-base">${(quote.total_amount || 0).toLocaleString()}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Flags row */}
+            <div className="flex flex-wrap gap-1.5">
+              {aiRecord.crane_required && <Badge className="bg-red-100 text-red-700 text-xs gap-1">Crane Required</Badge>}
+              {aiRecord.crane_likely && !aiRecord.crane_required && <Badge className="bg-orange-100 text-orange-700 text-xs gap-1">Crane Likely</Badge>}
+              {aiRecord.structures_nearby && <Badge className="bg-yellow-100 text-yellow-700 text-xs">Structures Nearby</Badge>}
+              {aiRecord.canopy_over_structure && <Badge className="bg-yellow-100 text-yellow-700 text-xs">Canopy Over Structure</Badge>}
+              {aiRecord.limited_drop_zone && <Badge className="bg-yellow-100 text-yellow-700 text-xs">Limited Drop Zone</Badge>}
+              {aiRecord.stump_grinding_likely && <Badge className="bg-blue-100 text-blue-700 text-xs">Stump Grinding Likely</Badge>}
+              {aiRecord.access_difficulty && aiRecord.access_difficulty !== "easy" && (
+                <Badge className="bg-muted text-muted-foreground text-xs capitalize">Access: {aiRecord.access_difficulty}</Badge>
+              )}
+              {aiRecord.urgency_level && aiRecord.urgency_level !== "normal" && (
+                <Badge className={`text-xs capitalize ${aiRecord.urgency_level === "emergency" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>
+                  {aiRecord.urgency_level} urgency
+                </Badge>
+              )}
+            </div>
+
+            {/* Hazards */}
+            {aiRecord.hazards_detected && (
+              <div className="flex items-start gap-2 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2 text-xs">
+                <AlertTriangle className="w-3.5 h-3.5 text-orange-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-orange-800 mb-0.5">Hazards Detected</p>
+                  <p className="text-orange-700">{aiRecord.hazards_detected}</p>
+                </div>
+              </div>
+            )}
+
+            {/* AI Reasoning */}
+            {aiRecord.ai_reasoning_summary && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1"><Bug className="w-3 h-3" /> AI Reasoning</p>
+                <p className="text-xs text-muted-foreground leading-relaxed bg-muted/30 rounded-lg p-2.5">{aiRecord.ai_reasoning_summary}</p>
+              </div>
+            )}
+
+            {/* Original customer notes */}
+            {aiRecord.original_customer_notes && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">Customer's Original Request</p>
+                <p className="text-xs text-muted-foreground italic bg-muted/30 rounded-lg p-2.5">"{aiRecord.original_customer_notes}"</p>
+              </div>
+            )}
+
+            {/* Missing info questions */}
+            {aiRecord.missing_info_questions && (
+              <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs">
+                <AlertTriangle className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-blue-800 mb-0.5">Questions to Clarify On-Site</p>
+                  <p className="text-blue-700">{aiRecord.missing_info_questions}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Photo thumbnails if any */}
+            {aiRecord.image_urls?.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">Customer Photos</p>
+                <div className="flex gap-2 flex-wrap">
+                  {aiRecord.image_urls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`Assessment photo ${i + 1}`} className="w-16 h-16 rounded-md object-cover border hover:opacity-80 transition-opacity" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
