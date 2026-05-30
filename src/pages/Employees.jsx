@@ -460,7 +460,7 @@ export default function Employees() {
       ) : (
         <div className="grid gap-3">
           {filtered.map((emp) => (
-            <Card key={emp.id} className="hover:shadow-md transition-shadow">
+            <Card key={emp.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openEdit(emp)}>
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-semibold text-primary flex-shrink-0">
                   {emp.first_name[0]}{emp.last_name[0]}
@@ -482,9 +482,9 @@ export default function Employees() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(emp)}><Pencil className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" onClick={e => { e.stopPropagation(); openEdit(emp); }}><Pencil className="w-4 h-4" /></Button>
                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"
-                    onClick={() => { if (confirm(`Remove ${emp.first_name} ${emp.last_name}?`)) deleteMutation.mutate(emp.id); }}>
+                    onClick={e => { e.stopPropagation(); if (confirm(`Remove ${emp.first_name} ${emp.last_name}?`)) deleteMutation.mutate(emp.id); }}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>

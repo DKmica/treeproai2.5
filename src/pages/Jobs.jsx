@@ -98,7 +98,7 @@ export default function Jobs() {
       ) : (
         <div className="grid gap-3">
           {filtered.map((j) => (
-            <Card key={j.id} className="p-4 hover:shadow-md transition-shadow">
+            <Card key={j.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setEditing(j)}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -122,14 +122,14 @@ export default function Jobs() {
                     <Button
                       size="sm"
                       className="gap-1.5 mt-1"
-                      onClick={() => setInvoiceJob(j)}
+                      onClick={(e) => { e.stopPropagation(); setInvoiceJob(j); }}
                     >
                       <Receipt className="w-3.5 h-3.5" /> Generate Invoice
                     </Button>
                   )}
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" onClick={e => e.stopPropagation()}><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setEditing(j)}>Edit</DropdownMenuItem>
                     {j.status === "scheduled" && <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "in_progress" } })}>Start Job</DropdownMenuItem>}

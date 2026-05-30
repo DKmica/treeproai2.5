@@ -64,7 +64,7 @@ export default function Customers() {
       ) : (
         <div className="grid gap-3">
           {filtered.map((c) => (
-            <Card key={c.id} className="p-4 hover:shadow-md transition-shadow">
+            <Card key={c.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setEditing(c)}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export default function Customers() {
                   </div>
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" onClick={e => e.stopPropagation()}><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setEditing(c)}>Edit</DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(c.id)}>Delete</DropdownMenuItem>

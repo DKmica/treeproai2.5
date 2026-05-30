@@ -384,7 +384,7 @@ export default function Invoices() {
       ) : (
         <div className="space-y-3">
           {filtered.map(inv => (
-            <Card key={inv.id} className="hover:shadow-md transition-shadow">
+            <Card key={inv.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setEditing(inv)}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
@@ -431,7 +431,7 @@ export default function Invoices() {
                    </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => e.stopPropagation()}>
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>

@@ -134,7 +134,7 @@ export default function Equipment() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {filtered.map((item) => (
-            <Card key={item.id} className="p-4 hover:shadow-md transition-shadow">
+            <Card key={item.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setEditing(item)}>
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -153,7 +153,7 @@ export default function Equipment() {
                   </div>
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" onClick={e => e.stopPropagation()}><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setEditing(item)}>Edit</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => updateMutation.mutate({ id: item.id, data: { status: "maintenance" } })}>Send to Maintenance</DropdownMenuItem>

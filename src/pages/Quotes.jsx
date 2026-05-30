@@ -147,7 +147,7 @@ Include common tree services like trimming, removal, stump grinding. Generate re
       ) : (
         <div className="grid gap-3">
           {filtered.map((q) => (
-            <Card key={q.id} className="p-4 hover:shadow-md transition-shadow">
+            <Card key={q.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/quotes/${q.id}`)}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
@@ -160,7 +160,7 @@ Include common tree services like trimming, removal, stump grinding. Generate re
                   <p className="text-lg font-bold">${(q.total_amount || 0).toLocaleString()}</p>
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" onClick={e => e.stopPropagation()}><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => navigate(`/quotes/${q.id}`)}>View Details</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setEditing(q)}>Edit</DropdownMenuItem>

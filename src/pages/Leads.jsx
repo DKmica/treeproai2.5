@@ -169,7 +169,7 @@ Address: ${lead.address || "Not provided"}`,
       ) : (
         <div className="grid gap-3">
           {filtered.map((lead) => (
-            <Card key={lead.id} className="p-4 hover:shadow-md transition-shadow">
+            <Card key={lead.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setEditingLead(lead)}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
@@ -196,7 +196,7 @@ Address: ${lead.address || "Not provided"}`,
                   {lead.ai_notes && <p className="text-xs text-primary/80 italic">AI: {lead.ai_notes}</p>}
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" onClick={e => e.stopPropagation()}><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setEditingLead(lead)}>Edit</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => aiScoreMutation.mutate(lead)} disabled={scoringId === lead.id}>
