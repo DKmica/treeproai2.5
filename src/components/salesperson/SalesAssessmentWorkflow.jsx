@@ -68,6 +68,7 @@ export default function SalesAssessmentWorkflow({ lead, onBack, onComplete, user
     const heightNum = parseFloat(measurements.height_ft) || null;
     const dbhNum = parseFloat(measurements.dbh_inches) || null;
 
+    try {
     const prompt = `You are a certified arborist and tree removal pricing expert.
 Analyze this field assessment for a tree service job:
 
@@ -102,9 +103,9 @@ Based on $500/hour crew rate, provide a realistic pricing estimate. Consider:
 
 Provide a confidence score and list what info is missing.`;
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    // Run without file_urls first if no images, otherwise include them
+    const llmParams = {
       prompt,
-      file_urls: allImageUrls.slice(0, 5),
       response_json_schema: {
         type: "object",
         properties: {
@@ -134,7 +135,12 @@ Provide a confidence score and list what info is missing.`;
           cleanup_volume_estimate: { type: "string" },
         }
       }
-    });
+    };
+    if (allImageUrls.length > 0) {
+      llmParams.file_urls = allImageUrls.slice(0, 5);
+    }
+
+    const result = await base44.integrations.Core.InvokeLLM(llmParams);
 
     // Save AIAnalysisRecord
     const record = await base44.entities.AIAnalysisRecord.create({
@@ -184,6 +190,11 @@ Provide a confidence score and list what info is missing.`;
     setAiResult({ ...result, id: record.id });
     setAnalyzing(false);
     toast.success("AI analysis complete!");
+    } catch (err) {
+      console.error("AI analysis error:", err);
+      setAnalyzing(false);
+      toast.error(`AI analysis failed: ${err?.message || "Unknown error"}. Please try again.`);
+    }
   };
 
   const toggleEquipment = (item) => {
