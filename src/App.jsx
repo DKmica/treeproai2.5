@@ -36,6 +36,7 @@ import WhiteLabel from '@/pages/WhiteLabel';
 import WidgetSettings from '@/pages/WidgetSettings';
 import APIKeys from '@/pages/APIKeys';
 import Webhooks from '@/pages/Webhooks';
+import SalespersonMode from '@/pages/SalespersonMode';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -87,6 +88,7 @@ const AuthenticatedApp = () => {
         <Route path="/webhooks" element={<Webhooks />} />
         <Route path="/ai-insights" element={<AIInsights />} />
         <Route path="/payroll" element={<Payroll />} />
+        <Route path="/field" element={<SalespersonMode />} />
       </Route>
       <Route path="/estimate" element={<PublicEstimate />} />
       <Route path="/portal/:token" element={<CustomerPortal />} />

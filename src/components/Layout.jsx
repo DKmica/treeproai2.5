@@ -25,6 +25,7 @@ const navGroups = [
   {
     label: "Sales",
     items: [
+      { path: "/field", label: "Field Mode 📱", icon: HardHat },
       { path: "/leads", label: "Leads", icon: Users },
       { path: "/customers", label: "Customers", icon: TreePine },
       { path: "/quotes", label: "Quotes", icon: FileText },
