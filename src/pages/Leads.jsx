@@ -187,6 +187,11 @@ Address: ${lead.address || "Not provided"}`,
                     {lead.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{lead.email}</span>}
                     {lead.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{lead.address}</span>}
                   </div>
+                  {lead.assigned_to && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <UserCheck className="w-3 h-3" />{lead.assigned_to}
+                    </span>
+                  )}
                   {lead.description && <p className="text-sm text-muted-foreground line-clamp-1">{lead.description}</p>}
                   {lead.ai_notes && <p className="text-xs text-primary/80 italic">AI: {lead.ai_notes}</p>}
                 </div>

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +15,14 @@ export default function LeadForm({ open, onOpenChange, onSubmit, initialData }) 
   const [form, setForm] = useState(initialData || {
     first_name: "", last_name: "", email: "", phone: "",
     address: "", source: "website", urgency: "normal", description: "",
+    assigned_to: "", assigned_to_id: "",
+  });
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ["employees_salespeople"],
+    queryFn: () => base44.entities.Employee.list(),
+    select: (data) => data.filter(e => e.status === "active" && (e.position === "salesperson" || e.can_sell)),
+    enabled: open,
   });
 
   const handleSubmit = (e) => {
@@ -72,6 +82,32 @@ export default function LeadForm({ open, onOpenChange, onSubmit, initialData }) 
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Assign Salesperson</Label>
+            <Select
+              value={form.assigned_to_id || "unassigned"}
+              onValueChange={(v) => {
+                if (v === "unassigned") {
+                  update("assigned_to_id", "");
+                  update("assigned_to", "");
+                } else {
+                  const emp = employees.find(e => e.id === v);
+                  update("assigned_to_id", v);
+                  update("assigned_to", emp ? `${emp.first_name} ${emp.last_name}` : "");
+                }
+              }}
+            >
+              <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">— Unassigned —</SelectItem>
+                {employees.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.first_name} {e.last_name} ({e.position.replace(/_/g, " ")})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>Description</Label>
