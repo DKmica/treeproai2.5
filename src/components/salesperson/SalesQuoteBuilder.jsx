@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -8,47 +8,241 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Sparkles, Plus, Trash2, CheckCircle2, Loader2,
-  Eye, Send, FileText, DollarSign, ChevronDown, ChevronUp
+  ArrowLeft, Sparkles, Plus, Trash2, Loader2,
+  Eye, FileText, ChevronDown, ChevronUp, Info, Clock
 } from "lucide-react";
-import { convertQuoteToJob, logActivity, logAudit, createPortalLink } from "@/lib/treeproWorkflow";
+import { logActivity } from "@/lib/treeproWorkflow";
+import {
+  calculateProductionPrice, estimateDumpLoads, estimateProductionHours,
+  PRICING_DEFAULTS
+} from "@/lib/pricingEngine";
 import SalesQuotePresentation from "./SalesQuotePresentation";
 
+// ── Production Hours Input ───────────────────────────────────────────────────
+
+function ProductionHoursInput({ hours, onChange }) {
+  const [useBreakdown, setUseBreakdown] = useState(false);
+
+  const totalFromBreakdown =
+    (parseFloat(hours.removalHours) || 0) +
+    (parseFloat(hours.groundChippingHours) || 0) +
+    (parseFloat(hours.logHandlingHours) || 0) +
+    (parseFloat(hours.finalCleanupHours) || 0);
+
+  const handleBreakdownChange = (field, val) => {
+    const updated = { ...hours, [field]: parseFloat(val) || 0 };
+    const total =
+      (updated.removalHours || 0) +
+      (updated.groundChippingHours || 0) +
+      (updated.logHandlingHours || 0) +
+      (updated.finalCleanupHours || 0);
+    onChange({ ...updated, totalHours: Math.round(total * 10) / 10 });
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+          <Clock className="w-3 h-3" /> Production Hours
+        </p>
+        <button
+          onClick={() => setUseBreakdown(p => !p)}
+          className="text-xs text-primary underline"
+        >
+          {useBreakdown ? "Use total only" : "Enter breakdown"}
+        </button>
+      </div>
+
+      {useBreakdown ? (
+        <Card className="p-3 space-y-2 bg-muted/30">
+          <p className="text-[10px] text-muted-foreground italic">
+            All phases = total production labor (cutting, rigging, chipping, log handling, cleanup combined)
+          </p>
+          {[
+            { key: "removalHours", label: "Removal / cutting / rigging" },
+            { key: "groundChippingHours", label: "Ground crew / chipping" },
+            { key: "logHandlingHours", label: "Log handling / loading" },
+            { key: "finalCleanupHours", label: "Final site cleanup" },
+          ].map(({ key, label }) => (
+            <div key={key} className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground w-44 shrink-0">{label}</span>
+              <Input
+                type="number"
+                min="0"
+                step="0.5"
+                value={hours[key] ?? ""}
+                onChange={e => handleBreakdownChange(key, e.target.value)}
+                className="h-8 text-sm w-24"
+                placeholder="hrs"
+              />
+              <span className="text-xs text-muted-foreground">h</span>
+            </div>
+          ))}
+          <div className="flex items-center justify-between pt-1 border-t">
+            <span className="text-xs font-bold">Total production hours</span>
+            <span className="text-sm font-bold text-primary">{hours.totalHours || totalFromBreakdown}h</span>
+          </div>
+        </Card>
+      ) : (
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            min="0"
+            step="0.5"
+            value={hours.totalHours ?? ""}
+            onChange={e => onChange({ ...hours, totalHours: parseFloat(e.target.value) || 0 })}
+            className="h-9 text-sm w-32"
+            placeholder="e.g. 16"
+          />
+          <span className="text-sm text-muted-foreground">total hours</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Dump Loads Input ─────────────────────────────────────────────────────────
+
+function DumpLoadsInput({ loads, onChange }) {
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dump Loads</p>
+      <Card className="p-3 space-y-2 bg-muted/30">
+        <p className="text-[10px] text-muted-foreground italic">
+          Chip loads max {PRICING_DEFAULTS.maxChipLoads} · Oversized = logs over 40" diameter
+        </p>
+        {[
+          { key: "chipLoads", label: `Chip loads (max ${PRICING_DEFAULTS.maxChipLoads})`, max: PRICING_DEFAULTS.maxChipLoads, rate: PRICING_DEFAULTS.chipDumpRate },
+          { key: "standardWoodLoads", label: "Standard wood loads", rate: PRICING_DEFAULTS.standardWoodDumpRate },
+          { key: "oversizedWoodLoads", label: "Oversized log loads (>40\")", rate: PRICING_DEFAULTS.oversizedWoodDumpRate },
+        ].map(({ key, label, max, rate }) => (
+          <div key={key} className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground w-44 shrink-0">{label}</span>
+            <Input
+              type="number"
+              min="0"
+              max={max}
+              step="1"
+              value={loads[key] ?? 0}
+              onChange={e => onChange({ ...loads, [key]: parseInt(e.target.value) || 0 })}
+              className="h-8 text-sm w-16"
+            />
+            <span className="text-xs text-muted-foreground">${rate}/load</span>
+          </div>
+        ))}
+      </Card>
+    </div>
+  );
+}
+
+// ── Price Calculator ─────────────────────────────────────────────────────────
+
+function PriceCalculator({ hours, loads, craneRequired, settings, onApplyPrice }) {
+  const result = calculateProductionPrice({
+    totalProductionHours: hours.totalHours || 0,
+    chipLoads: loads.chipLoads || 0,
+    standardWoodLoads: loads.standardWoodLoads || 0,
+    oversizedWoodLoads: loads.oversizedWoodLoads || 0,
+    craneRequired,
+    urgency: "normal",
+  }, settings);
+
+  const rangeHigh = Math.round(result.finalPrice * 1.05 / 5) * 5;
+
+  return (
+    <Card className="p-3 bg-primary/5 border-primary/20">
+      <p className="text-xs font-bold text-primary mb-2">Price Calculation</p>
+      <div className="space-y-1 text-xs text-muted-foreground">
+        <div className="flex justify-between">
+          <span>Production labor ({hours.totalHours}h × ${result.breakdown?.crewRate || PRICING_DEFAULTS.crewProductionRate}/hr)</span>
+          <span className="font-medium">${result.productionLaborCost.toLocaleString()}</span>
+        </div>
+        {result.chipDumpFees > 0 && (
+          <div className="flex justify-between">
+            <span>Chip dump fees ({result.breakdown?.actualChipLoads} loads)</span>
+            <span>${result.chipDumpFees.toLocaleString()}</span>
+          </div>
+        )}
+        {result.woodDumpFees > 0 && (
+          <div className="flex justify-between">
+            <span>Wood dump fees</span>
+            <span>${result.woodDumpFees.toLocaleString()}</span>
+          </div>
+        )}
+        {result.equipmentCharges > 0 && (
+          <div className="flex justify-between">
+            <span>Equipment (crane)</span>
+            <span>${result.equipmentCharges.toLocaleString()}</span>
+          </div>
+        )}
+        <div className="flex justify-between font-medium border-t pt-1">
+          <span>Job subtotal</span>
+          <span>${result.jobSubtotal.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>× {result.breakdown?.multiplier || 1.20} overhead/profit</span>
+          <span className="font-bold text-primary">${result.finalPrice.toLocaleString()}</span>
+        </div>
+      </div>
+      <Button
+        size="sm"
+        className="w-full mt-2 h-8 text-xs"
+        onClick={() => onApplyPrice(result.finalPrice, rangeHigh)}
+      >
+        Apply ${result.finalPrice.toLocaleString()} to quote
+      </Button>
+    </Card>
+  );
+}
+
+// ── Line Item Presets ────────────────────────────────────────────────────────
+
 const LINE_ITEM_PRESETS = [
-  { description: "Tree Removal", unit_price: 1500 },
+  { description: "Tree Removal — full removal with cleanup and haul-away", unit_price: 1500 },
   { description: "Tree Trimming / Pruning", unit_price: 450 },
   { description: "Stump Grinding", unit_price: 250 },
-  { description: "Brush Cleanup", unit_price: 200 },
-  { description: "Log Removal / Haul-Away", unit_price: 350 },
   { description: "Crane / Lift Equipment", unit_price: 1500 },
   { description: "Bucket Truck", unit_price: 800 },
   { description: "Emergency Surcharge", unit_price: 500 },
-  { description: "Debris Disposal", unit_price: 175 },
   { description: "Permit / Utility Coordination", unit_price: 300 },
 ];
 
-const PACKAGE_TIERS = {
-  basic: { label: "Basic", description: "Removal only, customer handles cleanup" },
-  full_cleanup: { label: "Full Cleanup", description: "Removal + all debris removed" },
-  complete: { label: "Complete Package", description: "Full removal + stump grinding + complete cleanup" },
-};
+// ── Main Component ───────────────────────────────────────────────────────────
 
 export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreated, user }) {
   const [lineItems, setLineItems] = useState(() => {
-    if (!aiRecord) return [{ description: "Tree Removal", quantity: 1, unit_price: 1500, total: 1500 }];
-    const items = [];
+    if (!aiRecord) return [{ description: "Tree Removal — full removal with cleanup and haul-away", quantity: 1, unit_price: 1500, total: 1500 }];
     const price = aiRecord.price_low || 1500;
-    items.push({ description: `Tree Removal – ${aiRecord.detected_species || "Tree"}${aiRecord.estimated_height_ft_high ? ` (~${aiRecord.estimated_height_ft_high}ft)` : ""}`, quantity: 1, unit_price: price, total: price });
+    const species = aiRecord.detected_species || "Tree";
+    const heightStr = aiRecord.estimated_height_ft_high ? ` (~${aiRecord.estimated_height_ft_high}ft)` : "";
+    const items = [
+      { description: `${species}${heightStr} — full removal with full cleanup and haul-away`, quantity: 1, unit_price: price, total: price }
+    ];
     if (aiRecord.crane_required || aiRecord.crane_likely) {
       items.push({ description: "Crane / Lift Equipment", quantity: 1, unit_price: 1500, total: 1500 });
     }
     if (aiRecord.stump_grinding_likely) {
       items.push({ description: "Stump Grinding", quantity: 1, unit_price: 250, total: 250 });
     }
-    items.push({ description: "Debris Cleanup & Disposal", quantity: 1, unit_price: 200, total: 200 });
     return items;
   });
 
+  // Production hours state (pre-filled from AI if available)
+  const [productionHours, setProductionHours] = useState(() => {
+    if (aiRecord) {
+      return estimateProductionHours(aiRecord) || { totalHours: 0, removalHours: 0, groundChippingHours: 0, logHandlingHours: 0, finalCleanupHours: 0 };
+    }
+    return { totalHours: 0, removalHours: 0, groundChippingHours: 0, logHandlingHours: 0, finalCleanupHours: 0 };
+  });
+
+  // Dump loads state
+  const [dumpLoads, setDumpLoads] = useState(() => {
+    if (aiRecord) return estimateDumpLoads(aiRecord) || { chipLoads: 0, standardWoodLoads: 0, oversizedWoodLoads: 0 };
+    return { chipLoads: 0, standardWoodLoads: 0, oversizedWoodLoads: 0 };
+  });
+
+  const [craneRequired, setCraneRequired] = useState(aiRecord?.crane_required || false);
+  const [showCalc, setShowCalc] = useState(false);
   const [notes, setNotes] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
   const [discountReason, setDiscountReason] = useState("");
@@ -56,8 +250,6 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
   const [savedQuote, setSavedQuote] = useState(null);
   const [showPresentation, setShowPresentation] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState(null);
-  const [generating, setGenerating] = useState(false);
 
   const { data: settings = {} } = useQuery({
     queryKey: ["company_settings"],
@@ -88,29 +280,31 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
     toast.success(`Added: ${preset.description}`);
   };
 
-  const applyPackage = (tier) => {
-    setSelectedPackage(tier);
-    const base = aiRecord?.price_low || 1500;
-    if (tier === "basic") {
-      setLineItems([{ description: `Tree Removal – ${aiRecord?.detected_species || "Tree"}`, quantity: 1, unit_price: base, total: base }]);
-    } else if (tier === "full_cleanup") {
-      const items = [
-        { description: `Tree Removal – ${aiRecord?.detected_species || "Tree"}`, quantity: 1, unit_price: base, total: base },
-        { description: "Brush & Debris Cleanup", quantity: 1, unit_price: 200, total: 200 },
-        { description: "Log Haul-Away", quantity: 1, unit_price: 300, total: 300 },
-      ];
-      if (aiRecord?.crane_required) items.push({ description: "Crane Equipment", quantity: 1, unit_price: 1500, total: 1500 });
-      setLineItems(items);
-    } else if (tier === "complete") {
-      const items = [
-        { description: `Tree Removal – ${aiRecord?.detected_species || "Tree"}`, quantity: 1, unit_price: base, total: base },
-        { description: "Stump Grinding & Root Flare", quantity: 1, unit_price: 275, total: 275 },
-        { description: "Complete Site Cleanup", quantity: 1, unit_price: 250, total: 250 },
-        { description: "Log & Debris Haul-Away", quantity: 1, unit_price: 350, total: 350 },
-      ];
-      if (aiRecord?.crane_required) items.push({ description: "Crane Equipment", quantity: 1, unit_price: 1500, total: 1500 });
-      setLineItems(items);
-    }
+  const applyCalculatedPrice = (low, high) => {
+    if (lineItems.length === 0) return;
+    setLineItems(prev => prev.map((item, i) =>
+      i === 0 ? { ...item, unit_price: low, total: (item.quantity || 1) * low } : item
+    ));
+    toast.success(`Applied $${low.toLocaleString()} to main line item`);
+    setShowCalc(false);
+  };
+
+  // Build internal breakdown string for company records
+  const buildInternalBreakdown = () => {
+    const h = productionHours;
+    const l = dumpLoads;
+    return [
+      "=== INTERNAL PRODUCTION BREAKDOWN ===",
+      `Removal/cutting/rigging: ${h.removalHours || "?"}h`,
+      `Ground crew/chipping: ${h.groundChippingHours || "?"}h`,
+      `Log handling/loading: ${h.logHandlingHours || "?"}h`,
+      `Final site cleanup: ${h.finalCleanupHours || "?"}h`,
+      `TOTAL production hours: ${h.totalHours || "?"}h`,
+      `Chip loads: ${l.chipLoads} (max ${PRICING_DEFAULTS.maxChipLoads}) @ $${PRICING_DEFAULTS.chipDumpRate}/load`,
+      `Standard wood loads: ${l.standardWoodLoads} @ $${PRICING_DEFAULTS.standardWoodDumpRate}/load`,
+      `Oversized wood loads (>40"): ${l.oversizedWoodLoads} @ $${PRICING_DEFAULTS.oversizedWoodDumpRate}/load`,
+      `Crane required: ${craneRequired ? "Yes" : "No"}`,
+    ].join("\n");
   };
 
   const saveQuote = async (presentAfter = false) => {
@@ -120,6 +314,7 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
 
     const qNumber = `Q-${Date.now().toString(36).toUpperCase()}`;
     const validUntil = new Date(Date.now() + (settings.quote_expiration_days || 30) * 86400000).toISOString().split("T")[0];
+    const internalBreakdown = buildInternalBreakdown();
 
     const quote = await base44.entities.Quote.create({
       quote_number: qNumber,
@@ -137,6 +332,7 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
       total_amount: total,
       ai_generated: !!aiRecord,
       notes: [notes, discountReason ? `Discount reason: ${discountReason}` : null].filter(Boolean).join("\n"),
+      internal_notes: internalBreakdown,
       scope_of_work: lineItems.map(i => i.description).join(", "),
       valid_until: validUntil,
     });
@@ -150,7 +346,7 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
       tax_amount: 0,
       total,
       changed_by: user?.full_name || "salesperson",
-      change_reason: "Initial field quote",
+      change_reason: "Initial field quote — production-labor formula",
       status_at_save: "draft",
     });
 
@@ -160,7 +356,7 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
       relatedType: "Quote", relatedId: quote.id,
       actor: user?.full_name || "salesperson",
       action: `Field quote created: ${qNumber}`,
-      notes: `${lead.first_name} ${lead.last_name} · $${total.toLocaleString()}`,
+      notes: `${lead.first_name} ${lead.last_name} · $${total.toLocaleString()} · ${productionHours.totalHours}h production`,
     });
 
     setSaving(false);
@@ -201,7 +397,7 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-6">
-        {/* AI Context */}
+        {/* AI Price Range */}
         {aiRecord?.price_low && (
           <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-xl px-3 py-2 text-sm">
             <Sparkles className="w-4 h-4 text-primary shrink-0" />
@@ -211,29 +407,53 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
           </div>
         )}
 
-        {/* Package Selector */}
+        {/* Production Hours */}
+        <ProductionHoursInput hours={productionHours} onChange={setProductionHours} />
+
+        {/* Dump Loads */}
+        <DumpLoadsInput loads={dumpLoads} onChange={setDumpLoads} />
+
+        {/* Crane toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCraneRequired(p => !p)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${craneRequired ? "bg-amber-100 border-amber-400 text-amber-700" : "border-border text-muted-foreground"}`}
+          >
+            🏗️ Crane Required: {craneRequired ? "Yes" : "No"}
+          </button>
+        </div>
+
+        {/* Price Calculator */}
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Quick Packages</p>
-          <div className="grid grid-cols-3 gap-2">
-            {Object.entries(PACKAGE_TIERS).map(([key, pkg]) => (
-              <button
-                key={key}
-                onClick={() => applyPackage(key)}
-                className={`p-2.5 rounded-xl border-2 text-left transition-all ${selectedPackage === key ? "border-primary bg-primary/10" : "border-border hover:border-primary/30"}`}
-              >
-                <p className="text-xs font-bold">{pkg.label}</p>
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{pkg.description}</p>
-              </button>
-            ))}
-          </div>
+          <button
+            onClick={() => setShowCalc(p => !p)}
+            className="flex items-center gap-1 text-xs text-primary underline"
+          >
+            {showCalc ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            {showCalc ? "Hide" : "Show"} production price calculator
+          </button>
+          {showCalc && (
+            <div className="mt-2">
+              <PriceCalculator
+                hours={productionHours}
+                loads={dumpLoads}
+                craneRequired={craneRequired}
+                settings={settings}
+                onApplyPrice={applyCalculatedPrice}
+              />
+            </div>
+          )}
         </div>
 
         {/* Line Items */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Line Items</p>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Customer Quote Line Items</p>
+              <p className="text-[10px] text-muted-foreground">Customer sees these descriptions — keep them simple and bundled</p>
+            </div>
             <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => setShowPresets(!showPresets)}>
-              <Plus className="w-3 h-3" /> Add Item
+              <Plus className="w-3 h-3" /> Add
             </Button>
           </div>
 
@@ -251,14 +471,9 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
                   </button>
                 ))}
                 <button
-                  onClick={() => {
-                    setLineItems(p => [...p, { description: "", quantity: 1, unit_price: 0, total: 0 }]);
-                    setShowPresets(false);
-                  }}
+                  onClick={() => { setLineItems(p => [...p, { description: "", quantity: 1, unit_price: 0, total: 0 }]); setShowPresets(false); }}
                   className="w-full px-3 py-2.5 text-sm text-primary hover:bg-muted text-left"
-                >
-                  + Custom line item
-                </button>
+                >+ Custom line item</button>
               </CardContent>
             </Card>
           )}
@@ -271,27 +486,17 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
                     <Input
                       value={item.description}
                       onChange={e => updateItem(idx, "description", e.target.value)}
-                      placeholder="Description"
+                      placeholder="Customer-facing description (e.g. Large oak removal with full cleanup)"
                       className="text-sm h-9"
                     />
                     <div className="flex gap-2">
                       <div className="flex-1">
                         <p className="text-[10px] text-muted-foreground mb-0.5">Qty</p>
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={e => updateItem(idx, "quantity", e.target.value)}
-                          className="text-sm h-9"
-                        />
+                        <Input type="number" value={item.quantity} onChange={e => updateItem(idx, "quantity", e.target.value)} className="text-sm h-9" />
                       </div>
                       <div className="flex-1">
                         <p className="text-[10px] text-muted-foreground mb-0.5">Price</p>
-                        <Input
-                          type="number"
-                          value={item.unit_price}
-                          onChange={e => updateItem(idx, "unit_price", e.target.value)}
-                          className="text-sm h-9"
-                        />
+                        <Input type="number" value={item.unit_price} onChange={e => updateItem(idx, "unit_price", e.target.value)} className="text-sm h-9" />
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] text-muted-foreground mb-0.5">Total</p>
@@ -308,7 +513,7 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
           </div>
         </div>
 
-        {/* Subtotal / Discount */}
+        {/* Discount */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal</span>
@@ -342,6 +547,15 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
           </div>
         </div>
 
+        {/* Internal summary */}
+        {productionHours.totalHours > 0 && (
+          <div className="bg-muted/40 rounded-lg p-3 text-xs text-muted-foreground space-y-0.5">
+            <p className="font-semibold text-foreground mb-1 flex items-center gap-1"><Info className="w-3 h-3" /> Internal record (not shown to customer)</p>
+            <p>Total production hours: <strong>{productionHours.totalHours}h</strong> (cutting + rigging + chipping + log handling + cleanup)</p>
+            <p>Chip loads: {dumpLoads.chipLoads} · Standard wood: {dumpLoads.standardWoodLoads} · Oversized wood: {dumpLoads.oversizedWoodLoads}</p>
+          </div>
+        )}
+
         <Textarea
           placeholder="Notes for the customer..."
           value={notes}
@@ -353,20 +567,11 @@ export default function SalesQuoteBuilder({ lead, aiRecord, onBack, onQuoteCreat
 
       {/* Footer */}
       <div className="p-4 border-t bg-background space-y-2">
-        <Button
-          className="w-full h-12 text-base gap-2"
-          disabled={saving}
-          onClick={() => saveQuote(true)}
-        >
+        <Button className="w-full h-12 text-base gap-2" disabled={saving} onClick={() => saveQuote(true)}>
           {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Eye className="w-5 h-5" />}
           Save & Present to Customer
         </Button>
-        <Button
-          variant="outline"
-          className="w-full h-11 gap-2"
-          disabled={saving}
-          onClick={() => saveQuote(false)}
-        >
+        <Button variant="outline" className="w-full h-11 gap-2" disabled={saving} onClick={() => saveQuote(false)}>
           <FileText className="w-4 h-4" /> Save Draft
         </Button>
       </div>
