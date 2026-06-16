@@ -166,23 +166,28 @@ export default function QuoteDetail() {
   };
 
   const updateStatus = async (status) => {
-    const data = { status };
-    if (status === "approved") data.approved_at = new Date().toISOString();
-    if (status === "rejected") data.rejected_at = new Date().toISOString();
-    if (status === "sent") data.sent_at = new Date().toISOString();
-    await updateMutation.mutateAsync(data);
     if (status === "approved") {
-      logAudit({ actorName: "staff", action: "quote_approved_by_staff", entityType: "Quote", entityId: id, newValue: { status: "approved" } });
-      // Auto-create job and navigate to jobs
+      // Approve + auto-convert to job in one flow — avoids double status write
       try {
-        const approvedQuote = { ...quote, ...data };
+        const approvedQuote = { ...quote, status: "approved", approved_at: new Date().toISOString() };
+        // First mark approved so the record is stamped
+        await updateMutation.mutateAsync({ status: "approved", approved_at: approvedQuote.approved_at });
+        logAudit({ actorName: "staff", action: "quote_approved_by_staff", entityType: "Quote", entityId: id, newValue: { status: "approved" } });
+        // Then auto-convert — convertQuoteToJob updates the quote to converted_to_job + creates Job
         await convertQuoteToJob(approvedQuote, customer, "staff");
         toast.success("Quote approved — job created and ready to schedule!");
         navigate("/jobs");
       } catch (err) {
         toast.error("Quote approved but job creation failed. Use 'Convert to Job' manually.");
       }
-    } else if (status === "rejected") {
+      return;
+    }
+
+    const data = { status };
+    if (status === "rejected") data.rejected_at = new Date().toISOString();
+    if (status === "sent") data.sent_at = new Date().toISOString();
+    await updateMutation.mutateAsync(data);
+    if (status === "rejected") {
       logAudit({ actorName: "staff", action: "quote_rejected_by_staff", entityType: "Quote", entityId: id, newValue: { status: "rejected" } });
     }
   };

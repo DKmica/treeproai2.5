@@ -52,18 +52,36 @@ export default function Jobs() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const job = await base44.entities.Job.update(id, data);
+    mutationFn: async ({ id, data, job: jobRecord }) => {
+      const updated = await base44.entities.Job.update(id, data);
       if (data.status) {
-        logActivity({ relatedType: "Job", relatedId: id, actor: "staff", action: `Job status changed to ${data.status}`, notes: data.completion_notes || "" });
+        logActivity({ relatedType: "Job", relatedId: id, actor: "staff", action: `Job status → ${data.status.replace(/_/g, " ")}`, notes: data.completion_notes || "" });
+
         if (data.status === "completed") {
           logAudit({ actorName: "staff", action: "job_completed", entityType: "Job", entityId: id, newValue: { status: "completed", completion_date: data.completion_date } });
-          createNotification({ type: "job_completed", title: "Job completed", message: `Job marked complete`, relatedType: "Job", relatedId: id });
+          createNotification({ type: "job_completed", title: "Job completed", message: `Job for ${jobRecord?.customer_name || "customer"} marked complete.`, relatedType: "Job", relatedId: id });
+        }
+
+        if (data.status === "invoiced") {
+          logAudit({ actorName: "staff", action: "job_invoiced", entityType: "Job", entityId: id, newValue: { status: "invoiced" } });
+          // Sync linked quote to invoiced
+          if (jobRecord?.quote_id) {
+            await base44.entities.Quote.update(jobRecord.quote_id, { status: "invoiced" }).catch(() => {});
+          }
+        }
+
+        if (data.status === "paid") {
+          logAudit({ actorName: "staff", action: "job_paid", entityType: "Job", entityId: id, newValue: { status: "paid" } });
+          // Sync linked quote to paid
+          if (jobRecord?.quote_id) {
+            await base44.entities.Quote.update(jobRecord.quote_id, { status: "paid" }).catch(() => {});
+          }
+          createNotification({ type: "general", title: "Payment received", message: `Job for ${jobRecord?.customer_name || "customer"} marked as paid.`, relatedType: "Job", relatedId: id });
         }
       }
-      return job;
+      return updated;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["jobs"] }); setEditing(null); toast.success("Job updated"); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["jobs"] }); queryClient.invalidateQueries({ queryKey: ["quotes"] }); setEditing(null); toast.success("Job updated"); },
   });
 
   const deleteMutation = useMutation({
@@ -117,26 +135,82 @@ export default function Jobs() {
                       </span>
                     )}
                   </div>
-                  {/* Prominent Generate Invoice button for completed jobs */}
-                  {j.status === "completed" && (
-                    <Button
-                      size="sm"
-                      className="gap-1.5 mt-1"
-                      onClick={(e) => { e.stopPropagation(); setInvoiceJob(j); }}
-                    >
-                      <Receipt className="w-3.5 h-3.5" /> Generate Invoice
-                    </Button>
-                  )}
+                  {/* Status action buttons shown inline on card */}
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {j.status === "unscheduled" && (
+                      <Button size="sm" variant="outline" className="gap-1.5 text-blue-700 border-blue-300"
+                        onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ id: j.id, data: { status: "scheduled" }, job: j }); }}>
+                        Mark Scheduled
+                      </Button>
+                    )}
+                    {(j.status === "dispatched" || j.status === "scheduled") && (
+                      <Button size="sm" variant="outline" className="gap-1.5 text-yellow-700 border-yellow-300"
+                        onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ id: j.id, data: { status: "in_progress" }, job: j }); }}>
+                        Start Job
+                      </Button>
+                    )}
+                    {(j.status === "in_progress" || j.status === "paused") && (
+                      <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700"
+                        onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ id: j.id, data: { status: "completed", completion_date: new Date().toISOString().split("T")[0] }, job: j }); }}>
+                        Complete Job
+                      </Button>
+                    )}
+                    {j.status === "completed" && (
+                      <Button size="sm" className="gap-1.5"
+                        onClick={(e) => { e.stopPropagation(); setInvoiceJob(j); }}>
+                        <Receipt className="w-3.5 h-3.5" /> Generate Invoice
+                      </Button>
+                    )}
+                    {j.status === "invoiced" && (
+                      <Button size="sm" variant="outline" className="gap-1.5 text-emerald-700 border-emerald-300"
+                        onClick={(e) => { e.stopPropagation(); updateMutation.mutate({ id: j.id, data: { status: "paid" }, job: j }); }}>
+                        Mark as Paid
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" onClick={e => e.stopPropagation()}><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setEditing(j)}>Edit</DropdownMenuItem>
-                    {j.status === "scheduled" && <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "in_progress" } })}>Start Job</DropdownMenuItem>}
-                    {j.status === "in_progress" && <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "completed", completion_date: new Date().toISOString().split("T")[0] } })}>Complete Job</DropdownMenuItem>}
+                    {j.status === "unscheduled" && (
+                      <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "scheduled" }, job: j })}>
+                        Mark as Scheduled
+                      </DropdownMenuItem>
+                    )}
+                    {j.status === "scheduled" && (
+                      <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "dispatched" }, job: j })}>
+                        Dispatch Crew
+                      </DropdownMenuItem>
+                    )}
+                    {(j.status === "dispatched" || j.status === "scheduled") && (
+                      <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "in_progress" }, job: j })}>
+                        Start Job
+                      </DropdownMenuItem>
+                    )}
+                    {j.status === "in_progress" && (
+                      <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "paused" }, job: j })}>
+                        Pause Job
+                      </DropdownMenuItem>
+                    )}
+                    {(j.status === "in_progress" || j.status === "paused") && (
+                      <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "completed", completion_date: new Date().toISOString().split("T")[0] }, job: j })}>
+                        Complete Job
+                      </DropdownMenuItem>
+                    )}
                     {j.status === "completed" && (
                       <DropdownMenuItem onClick={() => setInvoiceJob(j)}>
                         <Receipt className="w-4 h-4 mr-2" />Generate Invoice
+                      </DropdownMenuItem>
+                    )}
+                    {j.status === "invoiced" && (
+                      <DropdownMenuItem onClick={() => updateMutation.mutate({ id: j.id, data: { status: "paid" }, job: j })}>
+                        Mark as Paid
+                      </DropdownMenuItem>
+                    )}
+                    {j.status !== "cancelled" && j.status !== "paid" && (
+                      <DropdownMenuItem className="text-orange-600" onClick={() => updateMutation.mutate({ id: j.id, data: { status: "cancelled" }, job: j })}>
+                        Cancel Job
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(j.id)}>Delete</DropdownMenuItem>
