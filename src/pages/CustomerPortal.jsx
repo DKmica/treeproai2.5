@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import {
   TreePine, CheckCircle2, XCircle, MessageSquare, Loader2,
-  DollarSign, Phone, Mail, MapPin, AlertCircle
+  DollarSign, Phone, Mail, MapPin, AlertCircle, Pen
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { convertQuoteToJob } from "@/lib/treeproWorkflow";
+import { convertQuoteToJob, logAudit } from "@/lib/treeproWorkflow";
+import CustomerSignaturePad from "@/components/portal/CustomerSignaturePad";
 
 export default function CustomerPortal() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -25,6 +26,8 @@ export default function CustomerPortal() {
   const [action, setAction] = useState(null); // "approved" | "rejected" | "changes"
   const [changeNotes, setChangeNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showSignature, setShowSignature] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState(null);
 
   useEffect(() => {
     if (!token) { setError("Invalid or missing portal link."); setLoading(false); return; }
@@ -61,26 +64,70 @@ export default function CustomerPortal() {
     setLoading(false);
   };
 
+  const handleApproveWithSignature = async () => {
+    if (!signatureDataUrl) { toast.error("Please sign before approving."); return; }
+    handleAction("approved");
+  };
+
   const handleAction = async (type) => {
     if (submitting) return;
     setSubmitting(true);
     try {
       if (type === "approved") {
-        // First mark approved with timestamp
+        const customerName = customer?.first_name ? `${customer.first_name} ${customer.last_name}` : "Customer";
+        const signedAt = new Date().toISOString();
+
+        // Upload signature image for permanent storage
+        let signatureUrl = signatureDataUrl; // fallback: data URL
+        if (signatureDataUrl) {
+          try {
+            const blob = await (await fetch(signatureDataUrl)).blob();
+            const file = new File([blob], `portal_sig_${quote.id}_${Date.now()}.png`, { type: "image/png" });
+            const uploaded = await base44.integrations.Core.UploadFile({ file });
+            signatureUrl = uploaded.file_url;
+          } catch {
+            // keep data URL fallback — signature is not lost
+          }
+        }
+
+        // Mark quote approved
         await base44.entities.Quote.update(quote.id, {
           status: "approved",
-          approved_at: new Date().toISOString(),
+          approved_at: signedAt,
         });
         await base44.entities.CustomerPortalSession.update(session.id, { status: "used", action_taken: "approved" });
         await base44.entities.ActivityLog.create({
           related_type: "Quote",
           related_id: quote.id,
-          actor: customer?.first_name ? `${customer.first_name} ${customer.last_name}` : "Customer",
-          action: "Quote approved via customer portal",
+          actor: customerName,
+          action: "Quote approved with e-signature via customer portal",
         });
-        // Auto-create job from approved quote
+
+        // Auto-create job
         const approvedQuote = { ...quote, status: "approved" };
-        await convertQuoteToJob(approvedQuote, customer, customer?.first_name ? `${customer.first_name} ${customer.last_name}` : "Customer (portal)");
+        const job = await convertQuoteToJob(approvedQuote, customer, `${customerName} (portal)`);
+
+        // Save signature to the job record for audit
+        if (job?.id && signatureUrl) {
+          await base44.entities.Job.update(job.id, {
+            customer_signature_url: signatureUrl,
+            customer_signature_signed_by: customerName,
+            customer_signature_signed_at: signedAt,
+            customer_signature_salesperson: "Customer (portal self-sign)",
+          });
+          await logAudit({
+            actorName: customerName,
+            action: "customer_signature_saved_portal",
+            entityType: "Job", entityId: job.id,
+            newValue: {
+              signed_by: customerName,
+              signed_at: signedAt,
+              signature_url: signatureUrl,
+              source: "customer_portal",
+            }
+          });
+        }
+
         setAction("approved");
       } else if (type === "rejected") {
         await base44.entities.Quote.update(quote.id, {
@@ -239,18 +286,56 @@ export default function CustomerPortal() {
             {/* Approval actions — only if not yet finalized */}
             {["sent", "viewed", "draft", "needs_review"].includes(quote.status) && (
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3">
+                {/* E-Signature section */}
+                {!showSignature ? (
                   <Button
-                    className="flex-1 h-12 text-base gap-2 bg-green-600 hover:bg-green-700"
-                    onClick={() => handleAction("approved")}
+                    className="w-full h-14 text-base gap-2 bg-green-600 hover:bg-green-700"
+                    onClick={() => setShowSignature(true)}
                     disabled={submitting}
                   >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                    Approve Quote
+                    <Pen className="w-5 h-5" /> Approve & Sign
                   </Button>
+                ) : (
+                  <Card className="border-green-200 bg-green-50/50">
+                    <CardHeader className="pb-2 pt-4 px-4">
+                      <CardTitle className="text-sm text-green-800 flex items-center gap-2">
+                        <Pen className="w-4 h-4" /> Your Electronic Signature
+                      </CardTitle>
+                      <p className="text-xs text-green-700">
+                        By signing below you authorize the work described in this quote at the price shown.
+                      </p>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 space-y-3">
+                      <CustomerSignaturePad
+                        onSign={(dataUrl) => setSignatureDataUrl(dataUrl)}
+                        onClear={() => setSignatureDataUrl(null)}
+                      />
+                      <Button
+                        className="w-full h-12 text-base gap-2 bg-green-600 hover:bg-green-700"
+                        onClick={handleApproveWithSignature}
+                        disabled={submitting || !signatureDataUrl}
+                      >
+                        {submitting
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <CheckCircle2 className="w-5 h-5" />}
+                        {submitting ? "Processing…" : "Confirm & Approve Quote"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full text-sm text-muted-foreground"
+                        onClick={() => { setShowSignature(false); setSignatureDataUrl(null); }}
+                        disabled={submitting}
+                      >
+                        Cancel
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="flex gap-3">
                   <Button
                     variant="outline"
-                    className="flex-1 h-12 text-base gap-2"
+                    className="flex-1 h-11 gap-2"
                     onClick={() => handleAction("rejected")}
                     disabled={submitting}
                   >
@@ -258,6 +343,7 @@ export default function CustomerPortal() {
                     Decline
                   </Button>
                 </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Request changes instead:</label>
                   <Textarea
