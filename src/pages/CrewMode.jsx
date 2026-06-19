@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import TeamDailyOverview from "@/components/crew/TeamDailyOverview";
 import DumpLogSection from "@/components/crew/DumpLogSection";
+import JobCompletionForm from "@/components/crew/JobCompletionForm";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { logActivity, createNotification } from "@/lib/treeproWorkflow";
@@ -347,11 +348,18 @@ export default function CrewMode() {
   const qc = useQueryClient();
   const [uploading, setUploading] = useState(false);
   const [safetyJob, setSafetyJob] = useState(null);
+  const [completingJob, setCompletingJob] = useState(null); // job being completed
+  const [completingEquipment, setCompletingEquipment] = useState([]);
   const [view, setView] = useState("my_jobs"); // "my_jobs" | "team_overview"
 
   const { data: jobs = [], isLoading } = useQuery({
     queryKey: ["crew_jobs"],
     queryFn: () => base44.entities.Job.filter({ status: ["scheduled", "dispatched", "in_progress", "paused"] }),
+  });
+
+  const { data: allEquipment = [] } = useQuery({
+    queryKey: ["equipment_crew"],
+    queryFn: () => base44.entities.Equipment.list(),
   });
 
   const todayJobs = jobs.filter(j => {
@@ -365,21 +373,29 @@ export default function CrewMode() {
       const data = { status };
       if (status === "completed") {
         data.completion_date = new Date().toISOString().slice(0, 10);
-        data.time_out = data.time_out || new Date().toISOString();
+        data.time_out = new Date().toISOString();
       }
       return base44.entities.Job.update(id, data);
     },
     onSuccess: async (_, { id, status }) => {
       qc.invalidateQueries({ queryKey: ["crew_jobs"] });
       toast.success("Status updated");
-      if (status === "completed") {
-        const job = jobs.find(j => j.id === id);
-        await logActivity({ relatedType: "Job", relatedId: id, actor: "crew", action: "Job completed on site", notes: job?.customer_name || "" });
-        await createNotification({ type: "job_completed", title: `Job completed: ${job?.customer_name || ""}`, message: `Ready to invoice.`, relatedType: "Job", relatedId: id });
-      }
     },
     onError: () => toast.error("Failed to update status"),
   });
+
+  // Intercept "Complete Job" — show the full completion form instead
+  const handleUpdateStatus = (jobId, status) => {
+    if (status === "completed") {
+      const job = jobs.find(j => j.id === jobId);
+      const assignedIds = job?.assigned_equipment_ids || [];
+      const assignedEquipment = allEquipment.filter(e => assignedIds.includes(e.id));
+      setCompletingJob(job);
+      setCompletingEquipment(assignedEquipment);
+    } else {
+      updateStatus.mutate({ id: jobId, status });
+    }
+  };
 
   const handleUploadPhoto = (jobId, type) => {
     const input = document.createElement("input");
@@ -471,7 +487,7 @@ export default function CrewMode() {
                 <JobCard
                   key={job.id}
                   job={job}
-                  onUpdateStatus={(id, status) => updateStatus.mutate({ id, status })}
+                  onUpdateStatus={handleUpdateStatus}
                   onUploadPhoto={handleUploadPhoto}
                   onSafetyChecklist={(j) => setSafetyJob(j)}
                 />
@@ -485,13 +501,13 @@ export default function CrewMode() {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Other Active Jobs</p>
               <div className="space-y-3">
                 {jobs.filter(j => !todayJobs.includes(j)).map(job => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    onUpdateStatus={(id, status) => updateStatus.mutate({ id, status })}
-                    onUploadPhoto={handleUploadPhoto}
-                    onSafetyChecklist={(j) => setSafetyJob(j)}
-                  />
+                   <JobCard
+                     key={job.id}
+                     job={job}
+                     onUpdateStatus={handleUpdateStatus}
+                     onUploadPhoto={handleUploadPhoto}
+                     onSafetyChecklist={(j) => setSafetyJob(j)}
+                   />
                 ))}
               </div>
             </div>
@@ -504,6 +520,20 @@ export default function CrewMode() {
           job={safetyJob}
           onClose={() => setSafetyJob(null)}
           onSave={handleSafetySubmit}
+        />
+      )}
+
+      {completingJob && (
+        <JobCompletionForm
+          job={completingJob}
+          equipment={completingEquipment}
+          onCancel={() => { setCompletingJob(null); setCompletingEquipment([]); }}
+          onConfirm={() => {
+            setCompletingJob(null);
+            setCompletingEquipment([]);
+            qc.invalidateQueries({ queryKey: ["crew_jobs"] });
+            qc.invalidateQueries({ queryKey: ["equipment_crew"] });
+          }}
         />
       )}
     </div>
