@@ -32,6 +32,32 @@
     },
     "action_taken": {
       "type": "string"
+    },
+    "portal_email": {
+      "type": "string",
+      "description": "Customer email used for authenticated portal login"
+    },
+    "portal_pin": {
+      "type": "string",
+      "description": "6-digit PIN for customer portal login (plaintext for MVP, hash in production)"
+    },
+    "portal_pin_expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the PIN login session expires"
+    },
+    "last_login_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "portal_type": {
+      "type": "string",
+      "enum": [
+        "quote_approval",
+        "customer_dashboard"
+      ],
+      "default": "quote_approval",
+      "description": "Type of portal session"
     }
   },
   "required": [

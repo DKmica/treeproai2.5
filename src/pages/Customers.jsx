@@ -7,14 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, Phone, Mail, MapPin, DollarSign } from "lucide-react";
+import { Plus, Search, MoreVertical, Phone, Mail, MapPin, DollarSign, ExternalLink } from "lucide-react";
 import CustomerForm from "@/components/customers/CustomerForm";
+import SendPortalAccessDialog from "@/components/portal/SendPortalAccessDialog";
 import { toast } from "sonner";
 
 export default function Customers() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
+  const [portalCustomer, setPortalCustomer] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: customers = [], isLoading } = useQuery({
@@ -82,9 +84,12 @@ export default function Customers() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" onClick={e => e.stopPropagation()}><MoreVertical className="w-4 h-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setEditing(c)}>Edit</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(c.id)}>Delete</DropdownMenuItem>
-                  </DropdownMenuContent>
+                                        <DropdownMenuItem onClick={() => setEditing(c)}>Edit</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setPortalCustomer(c); }}>
+                                          Portal Access
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(c.id)}>Delete</DropdownMenuItem>
+                                      </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </Card>
@@ -94,6 +99,13 @@ export default function Customers() {
 
       <CustomerForm open={showForm} onOpenChange={setShowForm} onSubmit={(d) => createMutation.mutate(d)} />
       {editing && <CustomerForm open={!!editing} onOpenChange={() => setEditing(null)} initialData={editing} onSubmit={(d) => updateMutation.mutate({ id: editing.id, data: d })} />}
+      {portalCustomer && (
+        <SendPortalAccessDialog
+          customer={portalCustomer}
+          open={!!portalCustomer}
+          onOpenChange={(v) => { if (!v) setPortalCustomer(null); }}
+        />
+      )}
     </div>
   );
 }

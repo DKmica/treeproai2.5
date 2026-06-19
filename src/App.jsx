@@ -37,6 +37,7 @@ import WidgetSettings from '@/pages/WidgetSettings';
 import APIKeys from '@/pages/APIKeys';
 import Webhooks from '@/pages/Webhooks';
 import SalespersonMode from '@/pages/SalespersonMode';
+import CustomerDashboardPortal from '@/pages/CustomerDashboardPortal';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -92,6 +93,7 @@ const AuthenticatedApp = () => {
       </Route>
       <Route path="/estimate" element={<PublicEstimate />} />
       <Route path="/portal/:token" element={<CustomerPortal />} />
+      <Route path="/customer-portal" element={<CustomerDashboardPortal />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
