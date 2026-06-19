@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, Search, MoreVertical, Wrench, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import MaintenanceDashboard from "@/components/equipment/MaintenanceDashboard";
 
 const TYPES = ["chainsaw", "chipper", "stump_grinder", "bucket_truck", "crane", "climbing_gear", "other"];
 const STATUS_COLORS = {
@@ -72,7 +73,17 @@ function EquipmentForm({ open, onOpenChange, onSubmit, crews = [], initialData }
             <div className="space-y-1.5"><Label>Last Service</Label><Input type="date" value={form.last_maintenance} onChange={(e) => update("last_maintenance", e.target.value)} /></div>
             <div className="space-y-1.5"><Label>Next Service</Label><Input type="date" value={form.next_maintenance} onChange={(e) => update("next_maintenance", e.target.value)} /></div>
           </div>
-          <div className="space-y-1.5"><Label>Hours Used</Label><Input type="number" min="0" value={form.hours_used} onChange={(e) => update("hours_used", Number(e.target.value))} /></div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5"><Label>Hours Used</Label><Input type="number" min="0" value={form.hours_used} onChange={(e) => update("hours_used", Number(e.target.value))} /></div>
+            <div className="space-y-1.5">
+              <Label>Maint. Interval (hrs)</Label>
+              <Input type="number" min="0" placeholder="e.g. 50" value={form.maintenance_interval_hours || ""} onChange={(e) => update("maintenance_interval_hours", Number(e.target.value) || 0)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Hrs at Last Service</Label>
+              <Input type="number" min="0" placeholder="0" value={form.hours_at_last_maintenance || ""} onChange={(e) => update("hours_at_last_maintenance", Number(e.target.value) || 0)} />
+            </div>
+          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit">{initialData ? "Update" : "Add"}</Button>
@@ -121,6 +132,8 @@ export default function Equipment() {
         </div>
         <Button onClick={() => setShowForm(true)} className="gap-2"><Plus className="w-4 h-4" /> Add Equipment</Button>
       </div>
+
+      <MaintenanceDashboard equipment={equipment} onEditItem={(item) => setEditing(item)} />
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

@@ -12,6 +12,7 @@ import { logActivity, logAudit, createNotification } from "@/lib/treeproWorkflow
 import { useNavigate } from "react-router-dom";
 import JobForm from "@/components/jobs/JobForm";
 import GenerateInvoiceDialog from "@/components/jobs/GenerateInvoiceDialog";
+import EquipmentHoursDialog from "@/components/jobs/EquipmentHoursDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -33,12 +34,15 @@ export default function Jobs() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [invoiceJob, setInvoiceJob] = useState(null);
+  const [hoursJob, setHoursJob] = useState(null); // job that just completed → prompt equipment hours
+  const [hoursEquipment, setHoursEquipment] = useState([]);
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
 
   const { data: jobs = [], isLoading } = useQuery({ queryKey: ["jobs"], queryFn: () => base44.entities.Job.list("-created_date") });
   const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: () => base44.entities.Customer.list() });
   const { data: crews = [] } = useQuery({ queryKey: ["crews"], queryFn: () => base44.entities.Crew.list() });
+  const { data: allEquipment = [] } = useQuery({ queryKey: ["equipment"], queryFn: () => base44.entities.Equipment.list() });
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -60,6 +64,13 @@ export default function Jobs() {
         if (data.status === "completed") {
           logAudit({ actorName: "staff", action: "job_completed", entityType: "Job", entityId: id, newValue: { status: "completed", completion_date: data.completion_date } });
           createNotification({ type: "job_completed", title: "Job completed", message: `Job for ${jobRecord?.customer_name || "customer"} marked complete.`, relatedType: "Job", relatedId: id });
+          // Find equipment assigned to this job and prompt for hours update
+          const assignedIds = jobRecord?.assigned_equipment_ids || [];
+          const assignedEquip = allEquipment.filter(e => assignedIds.includes(e.id));
+          if (assignedEquip.length > 0) {
+            setHoursJob(jobRecord);
+            setHoursEquipment(assignedEquip);
+          }
         }
 
         if (data.status === "invoiced") {
@@ -227,9 +238,17 @@ export default function Jobs() {
         </div>
       )}
 
-      <JobForm open={showForm} onOpenChange={setShowForm} customers={customers} crews={crews} onSubmit={(d) => createMutation.mutate(d)} />
-      {editing && <JobForm open={!!editing} onOpenChange={() => setEditing(null)} customers={customers} crews={crews} initialData={editing} onSubmit={(d) => updateMutation.mutate({ id: editing.id, data: d })} />}
+      <JobForm open={showForm} onOpenChange={setShowForm} customers={customers} crews={crews} equipment={allEquipment} onSubmit={(d) => createMutation.mutate(d)} />
+      {editing && <JobForm open={!!editing} onOpenChange={() => setEditing(null)} customers={customers} crews={crews} equipment={allEquipment} initialData={editing} onSubmit={(d) => updateMutation.mutate({ id: editing.id, data: d })} />}
       {invoiceJob && <GenerateInvoiceDialog job={invoiceJob} onClose={() => setInvoiceJob(null)} />}
+      {hoursJob && hoursEquipment.length > 0 && (
+        <EquipmentHoursDialog
+          job={hoursJob}
+          equipment={hoursEquipment}
+          onClose={() => { setHoursJob(null); setHoursEquipment([]); }}
+          onSaved={() => queryClient.invalidateQueries({ queryKey: ["equipment"] })}
+        />
+      )}
     </div>
   );
 }

@@ -7,13 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Truck, PenLine } from "lucide-react";
+import { Truck, PenLine, Wrench } from "lucide-react";
 
-export default function JobForm({ open, onOpenChange, onSubmit, customers = [], crews = [], initialData }) {
+export default function JobForm({ open, onOpenChange, onSubmit, customers = [], crews = [], equipment = [], initialData }) {
   const [form, setForm] = useState(initialData || {
     customer_id: "", customer_name: "", description: "", address: "",
     scheduled_date: "", crew_id: "", crew_name: "", total_cost: 0, status: "scheduled", notes: "",
-    dump_expense_chips: 0, dump_expense_wood: 0,
+    dump_expense_chips: 0, dump_expense_wood: 0, assigned_equipment_ids: [],
   });
 
   const { data: settingsList = [] } = useQuery({
@@ -72,6 +72,34 @@ export default function JobForm({ open, onOpenChange, onSubmit, customers = [], 
             </Select>
           </div>
           <div className="space-y-1.5"><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} rows={2} /></div>
+
+          {/* Equipment Assignment */}
+          {equipment.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5"><Wrench className="w-3.5 h-3.5" /> Assigned Equipment</Label>
+              <div className="border rounded-lg p-2 space-y-1 max-h-36 overflow-y-auto bg-muted/20">
+                {equipment.filter(e => e.status !== "retired").map(e => {
+                  const checked = (form.assigned_equipment_ids || []).includes(e.id);
+                  return (
+                    <label key={e.id} className="flex items-center gap-2 cursor-pointer px-1 py-0.5 rounded hover:bg-muted/40 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          const ids = form.assigned_equipment_ids || [];
+                          update("assigned_equipment_ids", checked ? ids.filter(id => id !== e.id) : [...ids, e.id]);
+                        }}
+                        className="accent-primary"
+                      />
+                      <span>{e.name}</span>
+                      <span className="text-xs text-muted-foreground capitalize ml-auto">{e.type?.replace(/_/g, " ")}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">You'll be prompted to log hours when the job is completed.</p>
+            </div>
+          )}
 
           {/* Dump Fee Expense Tracking */}
           <div className="border rounded-lg p-3 space-y-3 bg-muted/30">

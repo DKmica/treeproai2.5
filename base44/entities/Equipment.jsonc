@@ -104,6 +104,15 @@
     "maintenance_interval_days": {
       "type": "number"
     },
+    "maintenance_interval_hours": {
+      "type": "number",
+      "description": "Hours of use between required maintenance (e.g. 50 for chainsaws, 250 for chippers)"
+    },
+    "hours_at_last_maintenance": {
+      "type": "number",
+      "default": 0,
+      "description": "Hours reading when last maintenance was performed"
+    },
     "hours_used": {
       "type": "number",
       "default": 0
