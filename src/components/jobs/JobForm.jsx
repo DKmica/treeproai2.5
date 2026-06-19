@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Truck } from "lucide-react";
+import { Truck, PenLine } from "lucide-react";
 
 export default function JobForm({ open, onOpenChange, onSubmit, customers = [], crews = [], initialData }) {
   const [form, setForm] = useState(initialData || {
@@ -108,6 +108,25 @@ export default function JobForm({ open, onOpenChange, onSubmit, customers = [], 
               </p>
             )}
           </div>
+
+          {/* Customer Signature (read-only audit display) */}
+          {initialData?.customer_signature_url && (
+            <div className="border rounded-lg p-3 space-y-2 bg-green-50 border-green-200">
+              <p className="text-xs font-semibold flex items-center gap-1.5 text-green-800 uppercase tracking-wider">
+                <PenLine className="w-3.5 h-3.5" /> Customer Signature
+              </p>
+              <img
+                src={initialData.customer_signature_url}
+                alt="Customer signature"
+                className="w-full max-h-24 object-contain bg-white border border-green-100 rounded p-1"
+              />
+              <div className="text-xs text-green-700 space-y-0.5">
+                {initialData.customer_signature_signed_by && <p>Signed by: <span className="font-medium">{initialData.customer_signature_signed_by}</span></p>}
+                {initialData.customer_signature_signed_at && <p>Date: <span className="font-medium">{new Date(initialData.customer_signature_signed_at).toLocaleString()}</span></p>}
+                {initialData.customer_signature_salesperson && <p>Salesperson: <span className="font-medium">{initialData.customer_signature_salesperson}</span></p>}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>

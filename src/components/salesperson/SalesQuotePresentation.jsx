@@ -65,6 +65,18 @@ export default function SalesQuotePresentation({ quote, lead, lineItems, total, 
     if (!customerSignature) { toast.error("Please collect customer signature"); return; }
     setApproving(true);
 
+    // Upload signature image for permanent storage
+    let signatureUrl = null;
+    try {
+      const blob = await (await fetch(customerSignature)).blob();
+      const file = new File([blob], `signature_${quote.id}_${Date.now()}.png`, { type: "image/png" });
+      const uploaded = await base44.integrations.Core.UploadFile({ file });
+      signatureUrl = uploaded.file_url;
+    } catch (err) {
+      console.error("Signature upload failed, storing as data URL fallback", err);
+      signatureUrl = customerSignature; // fallback: store data URL
+    }
+
     await base44.entities.Quote.update(quote.id, {
       status: "approved",
       approved_at: new Date().toISOString(),
@@ -81,7 +93,7 @@ export default function SalesQuotePresentation({ quote, lead, lineItems, total, 
       actorName: user?.full_name || "salesperson",
       action: "quote_approved_on_site",
       entityType: "Quote", entityId: quote.id,
-      newValue: { status: "approved", customer: `${lead.first_name} ${lead.last_name}`, total }
+      newValue: { status: "approved", customer: `${lead.first_name} ${lead.last_name}`, total, signature_captured: true }
     });
 
     await createNotification({
@@ -91,12 +103,34 @@ export default function SalesQuotePresentation({ quote, lead, lineItems, total, 
       relatedType: "Quote", relatedId: quote.id,
     });
 
-    // Convert to job
-    await convertQuoteToJob(
+    // Convert to job and save signature on the job record
+    const job = await convertQuoteToJob(
       { ...quote, status: "approved", total_amount: total, lead_id: lead.id },
       null,
       user?.full_name || "salesperson"
     );
+
+    if (job?.id && signatureUrl) {
+      await base44.entities.Job.update(job.id, {
+        notes: `${quote.scope_of_work || "From approved quote"}\n\n✅ Customer signed on-site via salesperson app.`,
+        customer_signature_url: signatureUrl,
+        customer_signature_signed_by: `${lead.first_name} ${lead.last_name}`,
+        customer_signature_signed_at: new Date().toISOString(),
+        customer_signature_salesperson: user?.full_name || "salesperson",
+      });
+
+      await logAudit({
+        actorName: user?.full_name || "salesperson",
+        action: "customer_signature_saved",
+        entityType: "Job", entityId: job.id,
+        newValue: {
+          signed_by: `${lead.first_name} ${lead.last_name}`,
+          signed_at: new Date().toISOString(),
+          signature_url: signatureUrl,
+          salesperson: user?.full_name || "salesperson",
+        }
+      });
+    }
 
     await base44.entities.Lead.update(lead.id, { status: "won" }).catch(() => {});
 

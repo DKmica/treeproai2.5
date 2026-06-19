@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, MapPin, Calendar, Users, DollarSign, Receipt } from "lucide-react";
+import { Plus, Search, MoreVertical, MapPin, Calendar, Users, DollarSign, Receipt, PenLine } from "lucide-react";
 import { logActivity, logAudit, createNotification } from "@/lib/treeproWorkflow";
 import { useNavigate } from "react-router-dom";
 import JobForm from "@/components/jobs/JobForm";
@@ -132,6 +132,11 @@ export default function Jobs() {
                     {((j.dump_expense_chips || 0) + (j.dump_expense_wood || 0)) > 0 && (
                       <span className="flex items-center gap-1 text-orange-600">
                         <Receipt className="w-3 h-3" />Dump: ${((j.dump_expense_chips || 0) + (j.dump_expense_wood || 0)).toLocaleString()}
+                      </span>
+                    )}
+                    {j.customer_signature_url && (
+                      <span className="flex items-center gap-1 text-green-700 font-medium">
+                        <PenLine className="w-3 h-3" />Signed
                       </span>
                     )}
                   </div>

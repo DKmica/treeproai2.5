@@ -215,6 +215,23 @@
       "type": "number",
       "default": 0,
       "description": "Actual wood/logs dump cost entered by staff"
+    },
+    "customer_signature_url": {
+      "type": "string",
+      "description": "URL of the customer's digital signature image captured on-site at quote approval"
+    },
+    "customer_signature_signed_by": {
+      "type": "string",
+      "description": "Full name of customer who signed"
+    },
+    "customer_signature_signed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when customer signed on-site"
+    },
+    "customer_signature_salesperson": {
+      "type": "string",
+      "description": "Salesperson who collected the signature"
     }
   },
   "required": [
