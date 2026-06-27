@@ -13,7 +13,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
-  FileText, Plus, Search, MoreVertical, DollarSign, AlertCircle, CheckCircle2, Loader2, Eye, CreditCard
+  FileText, Plus, Search, MoreVertical, DollarSign, AlertCircle, CheckCircle2, Loader2, Eye, CreditCard, FileDown
 } from "lucide-react";
 import { logAudit } from "@/lib/treeproWorkflow";
 import { toast } from "sonner";
@@ -395,6 +395,12 @@ export default function Invoices() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-sm">{inv.invoice_number || "—"}</p>
                         <Badge className={STATUS_STYLES[inv.status]}>{STATUS_LABELS[inv.status]}</Badge>
+                        {inv.pdf_url && (
+                          <a href={inv.pdf_url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+                             className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                            <FileDown className="w-3.5 h-3.5" />PDF
+                          </a>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground mt-0.5">{inv.customer_name}</p>
                       {inv.due_date && (
@@ -439,6 +445,11 @@ export default function Invoices() {
                         <DropdownMenuItem onClick={() => setEditing(inv)}>
                           <Eye className="w-4 h-4 mr-2" />Edit
                         </DropdownMenuItem>
+                        {inv.pdf_url && (
+                          <DropdownMenuItem onClick={() => window.open(inv.pdf_url, "_blank")}>
+                            <FileDown className="w-4 h-4 mr-2" />View PDF
+                          </DropdownMenuItem>
+                        )}
                         {inv.status !== "paid" && inv.status !== "void" && (
                           <DropdownMenuItem onClick={() => setPayingInvoice(inv)}>
                             <CreditCard className="w-4 h-4 mr-2" />Record Payment
