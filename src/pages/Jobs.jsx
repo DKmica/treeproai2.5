@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, MapPin, Calendar, Users, DollarSign, Receipt, PenLine, Fuel, TrendingUp } from "lucide-react";
+import { Plus, Search, MoreVertical, MapPin, Calendar, Users, DollarSign, Receipt, PenLine, Fuel, TrendingUp, HardHat } from "lucide-react";
 import { logActivity, logAudit, createNotification } from "@/lib/treeproWorkflow";
 import { useNavigate } from "react-router-dom";
 import JobForm from "@/components/jobs/JobForm";
@@ -43,6 +43,8 @@ export default function Jobs() {
   const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: () => base44.entities.Customer.list() });
   const { data: crews = [] } = useQuery({ queryKey: ["crews"], queryFn: () => base44.entities.Crew.list() });
   const { data: allEquipment = [] } = useQuery({ queryKey: ["equipment"], queryFn: () => base44.entities.Equipment.list() });
+  const { data: settings = [] } = useQuery({ queryKey: ["company_settings"], queryFn: () => base44.entities.CompanySettings.list() });
+  const crewRate = settings[0]?.crew_hourly_rate || 65;
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -150,9 +152,21 @@ export default function Jobs() {
                         <Fuel className="w-3 h-3" />Expenses: ${(j.expenses_total || 0).toLocaleString()}
                       </span>
                     )}
+                    {(() => {
+                      const laborCost = (j.actual_duration_hours || 0) * crewRate * (j.required_crew_size || 1);
+                      if (laborCost > 0) {
+                        return (
+                          <span className="flex items-center gap-1 text-indigo-600">
+                            <HardHat className="w-3 h-3" />Labor: ${laborCost.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                     {j.total_cost > 0 && (() => {
                       const dumpCost = (j.dump_expense_total || 0) || ((j.dump_expense_chips || 0) + (j.dump_expense_wood || 0));
-                      const costs = dumpCost + (j.expenses_total || 0);
+                      const laborCost = (j.actual_duration_hours || 0) * crewRate * (j.required_crew_size || 1);
+                      const costs = dumpCost + (j.expenses_total || 0) + laborCost;
                       const profit = (j.total_cost || 0) - costs;
                       const margin = j.total_cost > 0 ? (profit / j.total_cost) * 100 : 0;
                       return (
