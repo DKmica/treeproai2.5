@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, MapPin, Calendar, Users, DollarSign, Receipt, PenLine } from "lucide-react";
+import { Plus, Search, MoreVertical, MapPin, Calendar, Users, DollarSign, Receipt, PenLine, Fuel, TrendingUp } from "lucide-react";
 import { logActivity, logAudit, createNotification } from "@/lib/treeproWorkflow";
 import { useNavigate } from "react-router-dom";
 import JobForm from "@/components/jobs/JobForm";
@@ -145,6 +145,22 @@ export default function Jobs() {
                         <Receipt className="w-3 h-3" />Dump: ${((j.dump_expense_chips || 0) + (j.dump_expense_wood || 0)).toLocaleString()}
                       </span>
                     )}
+                    {(j.expenses_total || 0) > 0 && (
+                      <span className="flex items-center gap-1 text-purple-600">
+                        <Fuel className="w-3 h-3" />Expenses: ${(j.expenses_total || 0).toLocaleString()}
+                      </span>
+                    )}
+                    {j.total_cost > 0 && (() => {
+                      const dumpCost = (j.dump_expense_total || 0) || ((j.dump_expense_chips || 0) + (j.dump_expense_wood || 0));
+                      const costs = dumpCost + (j.expenses_total || 0);
+                      const profit = (j.total_cost || 0) - costs;
+                      const margin = j.total_cost > 0 ? (profit / j.total_cost) * 100 : 0;
+                      return (
+                        <span className={`flex items-center gap-1 font-medium ${profit >= 0 ? "text-green-700" : "text-red-600"}`}>
+                          <TrendingUp className="w-3 h-3" />Profit: ${profit.toLocaleString(undefined, { maximumFractionDigits: 0 })} ({margin.toFixed(0)}%)
+                        </span>
+                      );
+                    })()}
                     {j.customer_signature_url && (
                       <span className="flex items-center gap-1 text-green-700 font-medium">
                         <PenLine className="w-3 h-3" />Signed

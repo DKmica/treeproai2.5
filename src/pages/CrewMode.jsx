@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import TeamDailyOverview from "@/components/crew/TeamDailyOverview";
 import DumpLogSection from "@/components/crew/DumpLogSection";
+import ExpenseLogSection from "@/components/crew/ExpenseLogSection";
 import JobCompletionForm from "@/components/crew/JobCompletionForm";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -307,6 +308,12 @@ function JobCard({ job, onUpdateStatus, onUploadPhoto, onSafetyChecklist }) {
         {(job.status === "in_progress" || job.status === "paused" || job.status === "completed") && (
           <div className="border-t pt-3">
             <DumpLogSection job={job} />
+          </div>
+        )}
+
+        {(job.status === "in_progress" || job.status === "paused" || job.status === "completed") && (
+          <div className="border-t pt-3">
+            <ExpenseLogSection job={job} />
           </div>
         )}
 

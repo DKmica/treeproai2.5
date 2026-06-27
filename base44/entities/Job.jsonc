@@ -206,6 +206,11 @@
       "default": 0,
       "description": "Total dump fees saved (free dumps \u00d7 minimum fee)"
     },
+    "expenses_total": {
+      "type": "number",
+      "default": 0,
+      "description": "Total of crew-logged expenses (fuel, supplies, equipment rental, etc.) excluding dump fees"
+    },
     "dump_expense_chips": {
       "type": "number",
       "default": 0,

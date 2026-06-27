@@ -1,0 +1,67 @@
+{
+  "name": "JobExpense",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "description": "Job this expense belongs to"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Denormalized customer name for reporting"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "fuel",
+        "supplies",
+        "equipment_rental",
+        "dump",
+        "travel",
+        "other"
+      ],
+      "description": "Expense category"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Expense amount in dollars"
+    },
+    "description": {
+      "type": "string",
+      "description": "What the expense was for"
+    },
+    "expense_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "logged_by": {
+      "type": "string",
+      "description": "Name/role of crew member who logged the expense"
+    },
+    "receipt_url": {
+      "type": "string",
+      "description": "Optional photo of the receipt"
+    }
+  },
+  "required": [
+    "job_id",
+    "category",
+    "amount"
+  ],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
