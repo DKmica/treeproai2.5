@@ -87,6 +87,10 @@
     },
     "payment_link": {
       "type": "string"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "URL of the generated professional PDF invoice"
     }
   },
   "required": [
