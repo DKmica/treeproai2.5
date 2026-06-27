@@ -157,8 +157,8 @@ Deno.serve(async (req) => {
 
       // Upload PDF to file storage
       try {
-        const blob = new Blob([pdfBytes], { type: "application/pdf" });
-        const up = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob });
+        const pdfFile = new File([pdfBytes], `${invNum}.pdf`, { type: "application/pdf" });
+        const up = await base44.asServiceRole.integrations.Core.UploadFile({ file: pdfFile });
         pdfUrl = (up && up.file_url) || "";
         if (pdfUrl) {
           await base44.asServiceRole.entities.Invoice.update(inv.id, { pdf_url: pdfUrl });
