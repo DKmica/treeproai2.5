@@ -199,12 +199,36 @@ export default function AIAnalysis() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => base44.entities.AIAnalysisRecord.update(id, data),
-    onSuccess: async (_, { id, data }) => {
+    onSuccess: async (_, { id, data, record }) => {
       qc.invalidateQueries({ queryKey: ["ai_analysis"] });
       setReviewing(null);
       toast.success("Review saved");
       await logActivity({ relatedType: "AIAnalysisRecord", relatedId: id, actor: data.reviewed_by || "staff", action: `AI analysis ${data.human_review_status}`, notes: data.human_corrections || "" });
       await logAudit({ actorName: data.reviewed_by || "staff", action: "ai_analysis_reviewed", entityType: "AIAnalysisRecord", entityId: id, newValue: { status: data.human_review_status, price: data.human_final_price } });
+
+      // Sync confirmed assessments into the Tree Inventory (dedup by ai_analysis_id)
+      if (record && (data.human_review_status === "reviewed" || data.human_review_status === "corrected") && record.customer_id) {
+        try {
+          const existing = await base44.entities.TreeRecord.filter({ ai_analysis_id: id });
+          if (existing.length === 0) {
+            const cust = customers.find(c => c.id === record.customer_id);
+            const tree = await base44.entities.TreeRecord.create({
+              customer_id: record.customer_id,
+              species: record.detected_species || "",
+              condition: "good",
+              risk_level: record.risk_level || "low",
+              height_estimate_ft: record.estimated_height_ft_high || record.estimated_height_ft_low || null,
+              dbh_inches: record.estimated_dbh_inches_high || record.estimated_dbh_inches_low || null,
+              canopy_spread_ft: record.canopy_spread_ft || null,
+              ai_analysis_id: id,
+              photos: record.image_urls || [],
+              address: cust?.address || "",
+              notes: record.condition_summary || "",
+            });
+            await logActivity({ relatedType: "TreeRecord", relatedId: tree.id, actor: data.reviewed_by || "staff", action: "Tree added to inventory from AI analysis", notes: record.detected_species || "" });
+          }
+        } catch (_) { /* non-blocking — inventory sync is best-effort */ }
+      }
     },
     onError: () => toast.error("Failed to save review"),
   });
@@ -413,7 +437,7 @@ export default function AIAnalysis() {
         <ReviewDialog
           record={reviewing}
           onClose={() => setReviewing(null)}
-          onSave={(data) => updateMut.mutate({ id: reviewing.id, data })}
+          onSave={(data) => updateMut.mutate({ id: reviewing.id, data, record: reviewing })}
         />
       )}
 

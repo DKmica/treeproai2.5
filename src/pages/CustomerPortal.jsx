@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { convertQuoteToJob, logAudit } from "@/lib/treeproWorkflow";
+import { convertQuoteToJob, logAudit, saveQuoteVersion } from "@/lib/treeproWorkflow";
 import CustomerSignaturePad from "@/components/portal/CustomerSignaturePad";
 
 export default function CustomerPortal() {
@@ -143,6 +143,11 @@ export default function CustomerPortal() {
         });
         setAction("rejected");
       } else if (type === "changes") {
+        // Snapshot the current quote as a version before changes are applied
+        try {
+          const versions = await base44.entities.QuoteVersion.filter({ quote_id: quote.id });
+          await saveQuoteVersion(quote, versions, customer?.first_name ? `${customer.first_name} ${customer.last_name}` : "Customer", "Customer requested changes via portal");
+        } catch (_) { /* non-blocking — version snapshot is best-effort */ }
         await base44.entities.Quote.update(quote.id, { status: "needs_review", notes: (quote.notes ? quote.notes + "\n\n" : "") + `Customer requested changes: ${changeNotes}` });
         await base44.entities.CustomerPortalSession.update(session.id, { action_taken: `changes_requested: ${changeNotes}` });
         await base44.entities.Notification.create({
