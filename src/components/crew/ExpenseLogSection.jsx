@@ -28,6 +28,16 @@ export default function ExpenseLogSection({ job }) {
   const [form, setForm] = useState({ category: "fuel", amount: "", description: "", receipt_url: "" });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [receiptPreview, setReceiptPreview] = useState("");
+
+  const viewReceipt = async (uri) => {
+    try {
+      const { signed_url } = await base44.integrations.Core.CreateFileSignedUrl({ file_uri: uri, expires_in: 600 });
+      window.open(signed_url, "_blank");
+    } catch {
+      toast.error("Could not open receipt");
+    }
+  };
 
   const { data: expenses = [] } = useQuery({
     queryKey: ["job_expenses", job.id],
@@ -46,8 +56,10 @@ export default function ExpenseLogSection({ job }) {
       if (!file) return;
       setUploading(true);
       try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        setForm((f) => ({ ...f, receipt_url: file_url }));
+        const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
+        setForm((f) => ({ ...f, receipt_url: file_uri }));
+        const { signed_url } = await base44.integrations.Core.CreateFileSignedUrl({ file_uri, expires_in: 600 });
+        setReceiptPreview(signed_url);
         toast.success("Receipt photo attached");
       } catch {
         toast.error("Upload failed");
@@ -85,6 +97,7 @@ export default function ExpenseLogSection({ job }) {
         notes: form.description || "",
       });
       setForm({ category: "fuel", amount: "", description: "", receipt_url: "" });
+      setReceiptPreview("");
       setShowForm(false);
       qc.invalidateQueries({ queryKey: ["job_expenses", job.id] });
       qc.invalidateQueries({ queryKey: ["crew_jobs"] });
@@ -128,9 +141,9 @@ export default function ExpenseLogSection({ job }) {
                 </div>
                 {e.description && <p className="text-muted-foreground mt-0.5 truncate">{e.description}</p>}
                 {e.receipt_url && (
-                  <a href={e.receipt_url} target="_blank" rel="noreferrer" className="text-primary hover:underline text-[11px]">
-                    View receipt
-                  </a>
+                  <button type="button" onClick={() => viewReceipt(e.receipt_url)} className="text-primary hover:underline text-[11px] flex items-center gap-1 mt-0.5">
+                    <Camera className="w-3 h-3" /> View receipt
+                  </button>
                 )}
               </div>
               <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => handleDelete(e)}>
@@ -171,6 +184,11 @@ export default function ExpenseLogSection({ job }) {
             rows={2}
             className="text-sm resize-none"
           />
+          {receiptPreview && (
+            <div className="rounded-md overflow-hidden border h-20 w-full">
+              <img src={receiptPreview} alt="Receipt preview" className="h-full w-full object-cover" />
+            </div>
+          )}
           <div className="flex gap-2">
             <Button size="sm" variant="outline" className="text-xs gap-1.5" onClick={handleReceiptUpload} disabled={uploading}>
               {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
@@ -180,7 +198,7 @@ export default function ExpenseLogSection({ job }) {
               {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Plus className="w-3 h-3 mr-1" />}
               Save Expense
             </Button>
-            <Button size="sm" variant="ghost" className="text-xs" onClick={() => setShowForm(false)}>
+            <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setForm({ category: "fuel", amount: "", description: "", receipt_url: "" }); setReceiptPreview(""); setShowForm(false); }}>
               Cancel
             </Button>
           </div>
