@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import JobForm from "@/components/jobs/JobForm";
 import GenerateInvoiceDialog from "@/components/jobs/GenerateInvoiceDialog";
 import EquipmentHoursDialog from "@/components/jobs/EquipmentHoursDialog";
+import JobReceiptThumbnails from "@/components/jobs/JobReceiptThumbnails";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -180,6 +181,7 @@ export default function Jobs() {
                         <PenLine className="w-3 h-3" />Signed
                       </span>
                     )}
+                    <JobReceiptThumbnails jobId={j.id} />
                   </div>
                   {/* Status action buttons shown inline on card */}
                   <div className="flex flex-wrap gap-2 mt-1">
